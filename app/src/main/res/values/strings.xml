@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Kirara Schedule</string>
+    <string name="notification_channel_name">Course reminders</string>
+</resources>
