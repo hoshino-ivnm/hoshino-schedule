@@ -33,5 +33,8 @@ class SettingsRepository(private val dataSource: SettingsDataSource) {
         )
     }
 
+    suspend fun setWeekendVisibility(showSaturday: Boolean, showSunday: Boolean) =
+        dataSource.update { it.copy(showSaturday = showSaturday, showSunday = showSunday) }
+
     suspend fun replaceAll(preferences: UserPreferences) = dataSource.update { preferences }
 }

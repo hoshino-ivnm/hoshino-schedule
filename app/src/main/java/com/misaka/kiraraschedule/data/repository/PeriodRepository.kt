@@ -26,7 +26,7 @@ class PeriodRepository(private val periodDao: PeriodDao) {
                     sequence = index,
                     startMinutes = 8 * 60 + (index - 1) * 45,
                     endMinutes = 8 * 60 + index * 45,
-                    label = "µÚ${index}½Ú"
+                    label = "ç¬¬${index}èŠ‚"
                 )
             }
             replaceAll(defaults)

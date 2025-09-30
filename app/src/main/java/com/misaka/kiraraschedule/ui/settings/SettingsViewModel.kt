@@ -51,6 +51,10 @@ class SettingsViewModel(
         viewModelScope.launch { settingsRepository.setVisibleFields(fields) }
     }
 
+    fun setWeekendVisibility(showSaturday: Boolean, showSunday: Boolean) {
+        viewModelScope.launch { settingsRepository.setWeekendVisibility(showSaturday, showSunday) }
+    }
+
     fun setReminderLead(minutes: Int) {
         viewModelScope.launch { settingsRepository.setReminderLeadMinutes(minutes) }
     }

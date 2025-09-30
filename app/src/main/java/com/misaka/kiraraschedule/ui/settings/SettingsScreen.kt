@@ -46,10 +46,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.misaka.kiraraschedule.R
 import com.misaka.kiraraschedule.data.model.PeriodDefinition
 import com.misaka.kiraraschedule.data.settings.BackgroundMode
 import com.misaka.kiraraschedule.data.settings.CourseDisplayField
@@ -69,6 +71,7 @@ fun SettingsScreen(
     onVisibleFieldsChange: (Set<CourseDisplayField>) -> Unit,
     onReminderLeadChange: (Int) -> Unit,
     onDndConfigChange: (Boolean, Int, Int, Int) -> Unit,
+    onWeekendVisibilityChange: (Boolean, Boolean) -> Unit,
     onRequestDndAccess: () -> Unit,
     onAddPeriod: () -> Unit,
     onUpdatePeriod: (PeriodEditInput) -> Unit,
@@ -85,9 +88,9 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("Back") }
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.course_editor_back)) }
                 }
             )
         },
@@ -103,14 +106,14 @@ fun SettingsScreen(
         ) {
             Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Timetable", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_timetable_section), style = MaterialTheme.typography.titleMedium)
                     OutlinedTextField(
                         value = prefs.timetableName,
                         onValueChange = onTimetableNameChange,
-                        label = { Text("Name") },
+                        label = { Text(stringResource(R.string.settings_timetable_name_label)) },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Text("Background", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.settings_background_label), style = MaterialTheme.typography.titleSmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         colorOptions.forEach { hex ->
                             val selected = prefs.backgroundMode == BackgroundMode.COLOR && prefs.backgroundValue == hex
@@ -118,9 +121,13 @@ fun SettingsScreen(
                                 onBackgroundColorSelected(hex)
                             }
                         }
-                        TextButton(onClick = onBackgroundImageSelect) { Text("Pick image") }
+                        TextButton(onClick = onBackgroundImageSelect) {
+                            Text(stringResource(R.string.settings_background_pick))
+                        }
                         if (prefs.backgroundMode == BackgroundMode.IMAGE) {
-                            TextButton(onClick = onClearBackgroundImage) { Text("Use color") }
+                            TextButton(onClick = onClearBackgroundImage) {
+                                Text(stringResource(R.string.settings_background_use_color))
+                            }
                         }
                     }
                     if (prefs.backgroundMode == BackgroundMode.IMAGE) {
@@ -135,12 +142,34 @@ fun SettingsScreen(
                                 .clip(MaterialTheme.shapes.medium)
                         )
                     }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.settings_show_saturday))
+                        Switch(
+                            checked = prefs.showSaturday,
+                            onCheckedChange = { onWeekendVisibilityChange(it, prefs.showSunday) }
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(stringResource(R.string.settings_show_sunday))
+                        Switch(
+                            checked = prefs.showSunday,
+                            onCheckedChange = { onWeekendVisibilityChange(prefs.showSaturday, it) }
+                        )
+                    }
                 }
             }
 
             Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Course card fields", style = MaterialTheme.typography.titleMedium)
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.settings_course_fields_title), style = MaterialTheme.typography.titleMedium)
                     state.availableFields.forEach { field ->
                         val checked = prefs.visibleFields.contains(field)
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -158,8 +187,8 @@ fun SettingsScreen(
 
             Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Reminders", style = MaterialTheme.typography.titleMedium)
-                    Text("Remind before class: ${prefs.reminderLeadMinutes} minutes")
+                    Text(stringResource(R.string.settings_reminders_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_reminder_lead, prefs.reminderLeadMinutes))
                     Slider(
                         value = prefs.reminderLeadMinutes.toFloat(),
                         onValueChange = { onReminderLeadChange(it.toInt()) },
@@ -170,53 +199,58 @@ fun SettingsScreen(
 
             Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Do Not Disturb", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_dnd_title), style = MaterialTheme.typography.titleMedium)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Switch(checked = prefs.dndEnabled, onCheckedChange = { enabled ->
                             onDndConfigChange(enabled, prefs.dndLeadMinutes, prefs.dndReleaseMinutes, prefs.dndSkipBreakThresholdMinutes)
                             if (enabled) onRequestDndAccess()
                         })
-                        Text(if (prefs.dndEnabled) "Enabled" else "Disabled")
-                        if (prefs.dndEnabled.not()) {
-                            TextButton(onClick = onRequestDndAccess) { Text("Grant access") }
+                        Text(if (prefs.dndEnabled) stringResource(R.string.settings_dnd_enabled) else stringResource(R.string.settings_dnd_disabled))
+                        if (!prefs.dndEnabled) {
+                            TextButton(onClick = onRequestDndAccess) {
+                                Text(stringResource(R.string.settings_dnd_grant_access))
+                            }
                         }
                     }
                     if (prefs.dndEnabled) {
                         SliderWithValue(
-                            label = "Enable before class",
+                            label = stringResource(R.string.settings_dnd_enable_before),
                             value = prefs.dndLeadMinutes,
-                            range = 0..30
-                        ) { onDndConfigChange(true, it, prefs.dndReleaseMinutes, prefs.dndSkipBreakThresholdMinutes) }
+                            range = 0..30,
+                            onChange = { onDndConfigChange(true, it, prefs.dndReleaseMinutes, prefs.dndSkipBreakThresholdMinutes) }
+                        )
                         SliderWithValue(
-                            label = "Disable after class",
+                            label = stringResource(R.string.settings_dnd_disable_after),
                             value = prefs.dndReleaseMinutes,
-                            range = 0..30
-                        ) { onDndConfigChange(true, prefs.dndLeadMinutes, it, prefs.dndSkipBreakThresholdMinutes) }
+                            range = 0..30,
+                            onChange = { onDndConfigChange(true, prefs.dndLeadMinutes, it, prefs.dndSkipBreakThresholdMinutes) }
+                        )
                         SliderWithValue(
-                            label = "Keep DND if break shorter than",
+                            label = stringResource(R.string.settings_dnd_keep_enabled),
                             value = prefs.dndSkipBreakThresholdMinutes,
-                            range = 0..60
-                        ) { onDndConfigChange(true, prefs.dndLeadMinutes, prefs.dndReleaseMinutes, it) }
+                            range = 0..60,
+                            onChange = { onDndConfigChange(true, prefs.dndLeadMinutes, prefs.dndReleaseMinutes, it) }
+                        )
                     }
                 }
             }
 
             Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Periods", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_periods_title), style = MaterialTheme.typography.titleMedium)
                     state.periods.forEach { period ->
                         PeriodEditorRow(period = period, onUpdate = onUpdatePeriod, onRemove = onRemovePeriod)
                     }
-                    TextButton(onClick = onAddPeriod) { Text("Add period") }
+                    TextButton(onClick = onAddPeriod) { Text(stringResource(R.string.settings_add_period)) }
                 }
             }
 
             Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Data", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_data_section), style = MaterialTheme.typography.titleMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Button(onClick = onExport) { Text("Export") }
-                        Button(onClick = onImport) { Text("Import") }
+                        Button(onClick = onExport) { Text(stringResource(R.string.settings_export)) }
+                        Button(onClick = onImport) { Text(stringResource(R.string.settings_import)) }
                     }
                 }
             }
@@ -234,7 +268,7 @@ private fun sectionCardColors() = CardDefaults.cardColors(
 @Composable
 private fun SliderWithValue(label: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("$label: $value minutes")
+        Text(stringResource(R.string.settings_slider_value, label, value))
         Slider(
             value = value.toFloat(),
             onValueChange = { onChange(it.toInt()) },
@@ -262,10 +296,10 @@ private fun ColorOption(colorHex: String, selected: Boolean, onClick: () -> Unit
 
 @Composable
 private fun fieldLabel(field: CourseDisplayField): String = when (field) {
-    CourseDisplayField.NAME -> "Course name"
-    CourseDisplayField.TEACHER -> "Teacher"
-    CourseDisplayField.LOCATION -> "Location"
-    CourseDisplayField.NOTES -> "Notes"
+    CourseDisplayField.NAME -> stringResource(R.string.settings_field_name)
+    CourseDisplayField.TEACHER -> stringResource(R.string.settings_field_teacher)
+    CourseDisplayField.LOCATION -> stringResource(R.string.settings_field_location)
+    CourseDisplayField.NOTES -> stringResource(R.string.settings_field_notes)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -286,25 +320,25 @@ private fun PeriodEditorRow(
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Period ${period.sequence}", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.settings_period_title, period.sequence), style = MaterialTheme.typography.titleSmall)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
                 value = startText,
                 onValueChange = { startText = it.filterTimeInput() },
-                label = { Text("Start (HH:MM)") },
+                label = { Text(stringResource(R.string.settings_period_start_hint)) },
                 modifier = Modifier.weight(1f)
             )
             OutlinedTextField(
                 value = endText,
                 onValueChange = { endText = it.filterTimeInput() },
-                label = { Text("End (HH:MM)") },
+                label = { Text(stringResource(R.string.settings_period_end_hint)) },
                 modifier = Modifier.weight(1f)
             )
         }
         OutlinedTextField(
             value = labelText,
             onValueChange = { labelText = it },
-            label = { Text("Label") },
+            label = { Text(stringResource(R.string.settings_period_label_hint)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -325,11 +359,11 @@ private fun PeriodEditorRow(
                         )
                     )
                 }
-            }) { Text("Apply") }
+            }) { Text(stringResource(R.string.settings_period_apply)) }
             TextButton(onClick = { onRemove(period.sequence) }) {
                 Icon(Icons.Default.Delete, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Remove")
+                Text(stringResource(R.string.settings_period_remove))
             }
         }
     }

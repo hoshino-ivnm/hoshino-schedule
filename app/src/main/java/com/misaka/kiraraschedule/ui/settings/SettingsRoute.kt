@@ -6,12 +6,13 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarHostState
+import com.misaka.kiraraschedule.data.settings.UserPreferences
+import com.misaka.kiraraschedule.R
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.misaka.kiraraschedule.data.settings.UserPreferences
 import kotlinx.coroutines.launch
 
 @Composable
@@ -28,7 +29,7 @@ fun SettingsRoute(
         if (uri != null) {
             viewModel.export(uri) { success ->
                 scope.launch {
-                    snackbarHostState.showSnackbar(if (success) "Exported" else "Export failed")
+                    snackbarHostState.showSnackbar(if (success) context.getString(R.string.settings_export_success) else context.getString(R.string.settings_export_failure))
                 }
             }
         }
@@ -38,7 +39,7 @@ fun SettingsRoute(
         if (uri != null) {
             viewModel.import(uri) { success ->
                 scope.launch {
-                    snackbarHostState.showSnackbar(if (success) "Imported" else "Import failed")
+                    snackbarHostState.showSnackbar(if (success) context.getString(R.string.settings_import_success) else context.getString(R.string.settings_import_failure))
                 }
             }
         }
@@ -58,6 +59,7 @@ fun SettingsRoute(
         onClearBackgroundImage = { viewModel.setBackgroundColor(UserPreferences().backgroundValue) },
         onVisibleFieldsChange = { viewModel.setVisibleFields(it) },
         onReminderLeadChange = viewModel::setReminderLead,
+        onWeekendVisibilityChange = viewModel::setWeekendVisibility,
         onDndConfigChange = viewModel::setDndConfig,
         onRequestDndAccess = {
             context.startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))

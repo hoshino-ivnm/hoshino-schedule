@@ -16,7 +16,7 @@ enum class CourseDisplayField { NAME, TEACHER, LOCATION, NOTES }
 
 @Serializable
 data class UserPreferences(
-    val timetableName: String = "ÎÒµÄ¿Î±í",
+    val timetableName: String = "My Timetable",
     val backgroundMode: BackgroundMode = BackgroundMode.COLOR,
     val backgroundValue: String = "#FFBB86FC",
     val visibleFields: Set<CourseDisplayField> = setOf(CourseDisplayField.NAME, CourseDisplayField.TEACHER),
@@ -24,7 +24,9 @@ data class UserPreferences(
     val dndEnabled: Boolean = false,
     val dndLeadMinutes: Int = 5,
     val dndReleaseMinutes: Int = 5,
-    val dndSkipBreakThresholdMinutes: Int = 15
+    val dndSkipBreakThresholdMinutes: Int = 15,
+    val showSaturday: Boolean = true,
+    val showSunday: Boolean = true
 )
 
 class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStore<Preferences>) {
@@ -38,6 +40,8 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
     private val dndLeadMinutesKey = intPreferencesKey("dnd_lead_minutes")
     private val dndReleaseMinutesKey = intPreferencesKey("dnd_release_minutes")
     private val dndSkipThresholdKey = intPreferencesKey("dnd_skip_threshold")
+    private val showSaturdayKey = intPreferencesKey("show_saturday")
+    private val showSundayKey = intPreferencesKey("show_sunday")
 
     private val defaults = UserPreferences()
 
@@ -56,6 +60,8 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
             prefs[dndLeadMinutesKey] = updated.dndLeadMinutes
             prefs[dndReleaseMinutesKey] = updated.dndReleaseMinutes
             prefs[dndSkipThresholdKey] = updated.dndSkipBreakThresholdMinutes
+            prefs[showSaturdayKey] = if (updated.showSaturday) 1 else 0
+            prefs[showSundayKey] = if (updated.showSunday) 1 else 0
         }
     }
 
@@ -76,7 +82,9 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
             dndEnabled = (this[dndEnabledKey] ?: if (defaults.dndEnabled) 1 else 0) == 1,
             dndLeadMinutes = this[dndLeadMinutesKey] ?: defaults.dndLeadMinutes,
             dndReleaseMinutes = this[dndReleaseMinutesKey] ?: defaults.dndReleaseMinutes,
-            dndSkipBreakThresholdMinutes = this[dndSkipThresholdKey] ?: defaults.dndSkipBreakThresholdMinutes
+            dndSkipBreakThresholdMinutes = this[dndSkipThresholdKey] ?: defaults.dndSkipBreakThresholdMinutes,
+            showSaturday = (this[showSaturdayKey] ?: if (defaults.showSaturday) 1 else 0) == 1,
+            showSunday = (this[showSundayKey] ?: if (defaults.showSunday) 1 else 0) == 1
         )
     }
 }

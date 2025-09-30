@@ -3,6 +3,7 @@ package com.misaka.kiraraschedule.widget
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
@@ -23,7 +24,6 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.compose.ui.unit.dp
 import com.misaka.kiraraschedule.AppContainer
 import com.misaka.kiraraschedule.data.work.SchedulePlanner
 import com.misaka.kiraraschedule.util.minutesToTimeText
@@ -137,6 +137,7 @@ private object MaterialThemeColors {
     val primary = 0xFF80CBC4.toInt()
 }
 
+@SuppressLint("RestrictedApi")
 @Composable
 private fun HeaderRow(title: String, date: String) {
     Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.CenterVertically) {

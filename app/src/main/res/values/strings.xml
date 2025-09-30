@@ -1,4 +1,84 @@
-<resources>
+﻿<resources>
     <string name="app_name">Kirara Schedule</string>
     <string name="notification_channel_name">Course reminders</string>
+
+    <!-- Schedule -->
+    <string name="schedule_settings_content_description">Open settings</string>
+    <string name="schedule_add_course">Add course</string>
+    <string name="schedule_loading_state">Loading timetable…</string>
+    <string name="schedule_week_label">Week %1$d %2$s</string>
+    <string name="schedule_no_courses">No classes scheduled</string>
+    <string name="schedule_empty_periods">Set up class periods in settings to view the timetable.</string>
+    <string name="schedule_time_column_title">Time</string>
+    <string name="schedule_period_label">#%1$d</string>
+    <string name="schedule_period_time_range">%1$s - %2$s</string>
+    <string name="schedule_course_time_range">%1$s - %2$s</string>
+    <string name="schedule_delete_course_accessibility">Delete course</string>
+    <string name="schedule_remove_course_title">Remove course</string>
+    <string name="schedule_remove_course_message">Remove %1$s from the timetable?</string>
+    <string name="schedule_remove_course_confirm">Delete</string>
+    <string name="schedule_remove_course_cancel">Cancel</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_timetable_section">Timetable</string>
+    <string name="settings_timetable_name_label">Name</string>
+    <string name="settings_background_label">Background</string>
+    <string name="settings_background_pick">Pick image</string>
+    <string name="settings_background_use_color">Use color</string>
+    <string name="settings_show_saturday">Show Saturday</string>
+    <string name="settings_show_sunday">Show Sunday</string>
+    <string name="settings_course_fields_title">Course card fields</string>
+    <string name="settings_field_name">Course name</string>
+    <string name="settings_field_teacher">Teacher</string>
+    <string name="settings_field_location">Location</string>
+    <string name="settings_field_notes">Notes</string>
+    <string name="settings_reminders_title">Reminders</string>
+    <string name="settings_reminder_lead">Remind before class: %1$d minutes</string>
+    <string name="settings_dnd_title">Do Not Disturb</string>
+    <string name="settings_dnd_enabled">Enabled</string>
+    <string name="settings_dnd_disabled">Disabled</string>
+    <string name="settings_dnd_enable_before">Enable before class</string>
+    <string name="settings_dnd_disable_after">Disable after class</string>
+    <string name="settings_dnd_keep_enabled">Keep DND if break shorter than</string>
+    <string name="settings_dnd_grant_access">Grant access</string>
+    <string name="settings_slider_value">%1$s: %2$d minutes</string>
+    <string name="settings_periods_title">Periods</string>
+    <string name="settings_add_period">Add period</string>
+    <string name="settings_period_title">Period %1$d</string>
+    <string name="settings_period_start_hint">Start (HH:MM)</string>
+    <string name="settings_period_end_hint">End (HH:MM)</string>
+    <string name="settings_period_label_hint">Label</string>
+    <string name="settings_period_apply">Apply</string>
+    <string name="settings_period_remove">Remove</string>
+    <string name="settings_data_section">Data</string>
+    <string name="settings_export">Export</string>
+    <string name="settings_import">Import</string>
+    <string name="settings_export_success">Exported successfully</string>
+    <string name="settings_export_failure">Export failed</string>
+    <string name="settings_import_success">Imported successfully</string>
+    <string name="settings_import_failure">Import failed</string>
+
+    <!-- Course editor -->
+    <string name="course_editor_new_title">New course</string>
+    <string name="course_editor_edit_title">Edit course</string>
+    <string name="course_editor_back">Back</string>
+    <string name="course_editor_save">Save</string>
+    <string name="course_editor_name">Course name</string>
+    <string name="course_editor_teacher">Teacher</string>
+    <string name="course_editor_location">Location</string>
+    <string name="course_editor_notes">Notes</string>
+    <string name="course_editor_card_color">Card color</string>
+    <string name="course_editor_color_auto">Auto</string>
+    <string name="course_editor_time_slots">Time slots</string>
+    <string name="course_editor_time_slot_help">Set up periods in settings before adding time slots.</string>
+    <string name="course_editor_add_time_slot">Add time slot</string>
+    <string name="course_editor_day_label">Day</string>
+    <string name="course_editor_start_period">Start</string>
+    <string name="course_editor_end_period">End</string>
+    <string name="course_editor_remove_time_slot">Remove time slot</string>
+
+    <!-- Snackbar -->
+    <string name="common_export">Export</string>
+    <string name="common_import">Import</string>
 </resources>
