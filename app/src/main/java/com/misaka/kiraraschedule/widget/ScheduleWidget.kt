@@ -27,6 +27,7 @@ import androidx.glance.unit.ColorProvider
 import com.misaka.kiraraschedule.AppContainer
 import com.misaka.kiraraschedule.data.work.SchedulePlanner
 import com.misaka.kiraraschedule.util.minutesToTimeText
+import com.misaka.kiraraschedule.util.termStartDate
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
@@ -49,6 +50,8 @@ class ScheduleWidget : GlanceAppWidget() {
         val upcoming = planner.buildUpcomingClasses(
             courses = courses,
             periods = periods,
+            termStartDate = preferences.termStartDate(),
+            totalWeeks = preferences.totalWeeks,
             zoneId = zone,
             startDate = today,
             daysAhead = 0
@@ -72,7 +75,10 @@ class ScheduleWidget : GlanceAppWidget() {
                 if (upcomingToday.isEmpty()) {
                     Text(
                         text = "No upcoming classes",
-                        style = TextStyle(color = ColorProvider(MaterialThemeColors.onWidget), fontStyle = FontStyle.Italic)
+                        style = TextStyle(
+                            color = ColorProvider(MaterialThemeColors.onWidget),
+                            fontStyle = FontStyle.Italic
+                        )
                     )
                 } else {
                     upcomingToday.forEach { scheduled ->
@@ -94,7 +100,10 @@ class ScheduleWidget : GlanceAppWidget() {
                             Column(modifier = GlanceModifier.defaultWeight()) {
                                 Text(
                                     text = scheduled.course.name,
-                                    style = TextStyle(color = ColorProvider(MaterialThemeColors.onWidget), fontWeight = FontWeight.Medium)
+                                    style = TextStyle(
+                                        color = ColorProvider(MaterialThemeColors.onWidget),
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 )
                                 val subtitle = buildString {
                                     append(minutesToTimeText(scheduled.startDateTime.hour * 60 + scheduled.startDateTime.minute))
@@ -140,10 +149,16 @@ private object MaterialThemeColors {
 @SuppressLint("RestrictedApi")
 @Composable
 private fun HeaderRow(title: String, date: String) {
-    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Vertical.CenterVertically) {
+    Row(
+        modifier = GlanceModifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Vertical.CenterVertically
+    ) {
         Text(
             text = title,
-            style = TextStyle(color = ColorProvider(MaterialThemeColors.onWidget), fontWeight = FontWeight.Bold),
+            style = TextStyle(
+                color = ColorProvider(MaterialThemeColors.onWidget),
+                fontWeight = FontWeight.Bold
+            ),
             modifier = GlanceModifier.defaultWeight()
         )
         Text(

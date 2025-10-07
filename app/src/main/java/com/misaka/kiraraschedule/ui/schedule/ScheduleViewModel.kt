@@ -6,8 +6,9 @@ import com.misaka.kiraraschedule.data.model.Course
 import com.misaka.kiraraschedule.data.repository.CourseRepository
 import com.misaka.kiraraschedule.data.repository.PeriodRepository
 import com.misaka.kiraraschedule.data.repository.SettingsRepository
-import com.misaka.kiraraschedule.data.settings.UserPreferences
 import com.misaka.kiraraschedule.data.work.ReminderScheduler
+import com.misaka.kiraraschedule.util.computeWeekNumber
+import com.misaka.kiraraschedule.util.termStartDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
+import java.time.LocalDate
 
 class ScheduleViewModel(
     private val courseRepository: CourseRepository,
@@ -37,7 +39,8 @@ class ScheduleViewModel(
                 val dayValue = day.value
                 val items = courses.flatMap { course ->
                     course.times.filter { it.dayOfWeek == dayValue }.mapNotNull { time ->
-                        val start = periodMap[time.startPeriod]?.startMinutes ?: return@mapNotNull null
+                        val start =
+                            periodMap[time.startPeriod]?.startMinutes ?: return@mapNotNull null
                         val end = periodMap[time.endPeriod]?.endMinutes ?: return@mapNotNull null
                         DayScheduleItem(
                             course = course,
@@ -49,11 +52,18 @@ class ScheduleViewModel(
                 }.sortedBy { it.startMinutes }
                 DaySchedule(day, items)
             }
+            val termStart = preferences.termStartDate()
+            val today = LocalDate.now()
+            val totalWeeks = preferences.totalWeeks.coerceAtLeast(1)
+            val currentWeek = computeWeekNumber(termStart, today)
             ScheduleUiState(
                 isLoading = false,
                 periods = periods,
                 preferences = preferences,
-                days = days
+                days = days,
+                termStartDate = termStart,
+                totalWeeks = totalWeeks,
+                currentWeekNumber = currentWeek
             )
         }
     }.stateIn(
@@ -71,7 +81,8 @@ class ScheduleViewModel(
                 val prefs = state.preferences ?: return@collect
                 if (state.periods.isEmpty()) return@collect
                 reminderScheduler.rescheduleAll(
-                    courses = state.days.flatMap { day -> day.items.map { it.course } }.distinctBy { it.id },
+                    courses = state.days.flatMap { day -> day.items.map { it.course } }
+                        .distinctBy { it.id },
                     periods = state.periods,
                     preferences = prefs
                 )

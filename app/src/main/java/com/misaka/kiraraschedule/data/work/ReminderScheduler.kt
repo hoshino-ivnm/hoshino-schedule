@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import com.misaka.kiraraschedule.data.model.Course
 import com.misaka.kiraraschedule.data.model.PeriodDefinition
 import com.misaka.kiraraschedule.data.settings.UserPreferences
+import com.misaka.kiraraschedule.util.termStartDate
 import com.misaka.kiraraschedule.widget.ScheduleWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,31 @@ class ReminderScheduler(
 
     private val widgetScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val widget = ScheduleWidget()
+    fun triggerTestNotification(title: String, subtitle: String? = null, delaySeconds: Long = 0) {
+        val request = OneTimeWorkRequestBuilder<ReminderWorker>()
+            .setInputData(
+                Data.Builder()
+                    .putString(ReminderWorker.KEY_COURSE_NAME, title)
+                    .putString(ReminderWorker.KEY_SUBTITLE, subtitle)
+                    .putInt(
+                        ReminderWorker.KEY_NOTIFICATION_ID,
+                        (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+                    )
+                    .build()
+            )
+            .setInitialDelay(Duration.ofSeconds(delaySeconds.coerceAtLeast(0)))
+            .addTag(TEST_NOTIFICATION_TAG)
+            .build()
+        workManager.enqueue(request)
+    }
 
+    fun triggerTestDnd(durationMinutes: Int) {
+        val now = ZonedDateTime.now(ZoneId.systemDefault())
+        val enableTime = now.plusSeconds(1)
+        val disableTime = enableTime.plusMinutes(durationMinutes.coerceAtLeast(1).toLong())
+        enqueueDndToggle(enable = true, time = enableTime, now = now)
+        enqueueDndToggle(enable = false, time = disableTime, now = now)
+    }
     fun rescheduleAll(
         courses: List<Course>,
         periods: List<PeriodDefinition>,
@@ -43,7 +68,15 @@ class ReminderScheduler(
 
         val zoneId = ZoneId.systemDefault()
         val now = ZonedDateTime.now(zoneId)
-        val upcoming = planner.buildUpcomingClasses(courses, periods, zoneId, now.toLocalDate(), daysAhead)
+        val upcoming = planner.buildUpcomingClasses(
+            courses = courses,
+            periods = periods,
+            termStartDate = preferences.termStartDate(),
+            totalWeeks = preferences.totalWeeks,
+            zoneId = zoneId,
+            startDate = now.toLocalDate(),
+            daysAhead = daysAhead
+        )
 
         scheduleReminders(upcoming, now, preferences)
         if (preferences.dndEnabled) {
@@ -60,7 +93,8 @@ class ReminderScheduler(
     ) {
         if (preferences.reminderLeadMinutes < 0) return
         upcoming.forEach { scheduled ->
-            val triggerTime = scheduled.startDateTime.minusMinutes(preferences.reminderLeadMinutes.toLong())
+            val triggerTime =
+                scheduled.startDateTime.minusMinutes(preferences.reminderLeadMinutes.toLong())
             val duration = Duration.between(now, triggerTime)
             if (duration.isNegative) return@forEach
             val subtitle = buildString {
@@ -109,8 +143,10 @@ class ReminderScheduler(
 
         val sorted = upcoming.sortedBy { it.startDateTime }
         sorted.forEach { scheduled ->
-            val enableTime = scheduled.startDateTime.minusMinutes(preferences.dndLeadMinutes.toLong())
-            val disableTime = scheduled.endDateTime.plusMinutes(preferences.dndReleaseMinutes.toLong())
+            val enableTime =
+                scheduled.startDateTime.minusMinutes(preferences.dndLeadMinutes.toLong())
+            val disableTime =
+                scheduled.endDateTime.plusMinutes(preferences.dndReleaseMinutes.toLong())
             if (currentEnableTime == null || currentDisableTime == null) {
                 currentEnableTime = enableTime
                 currentDisableTime = disableTime
@@ -150,5 +186,9 @@ class ReminderScheduler(
     companion object {
         private const val REMINDER_TAG = "reminder_work"
         private const val DND_TAG = "dnd_work"
+        private const val TEST_NOTIFICATION_TAG = "test_notification"
     }
 }
+
+
+

@@ -5,6 +5,7 @@ import com.misaka.kiraraschedule.data.settings.CourseDisplayField
 import com.misaka.kiraraschedule.data.settings.SettingsDataSource
 import com.misaka.kiraraschedule.data.settings.UserPreferences
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 class SettingsRepository(private val dataSource: SettingsDataSource) {
 
@@ -35,6 +36,30 @@ class SettingsRepository(private val dataSource: SettingsDataSource) {
 
     suspend fun setWeekendVisibility(showSaturday: Boolean, showSunday: Boolean) =
         dataSource.update { it.copy(showSaturday = showSaturday, showSunday = showSunday) }
+
+    suspend fun setTermStartDate(date: LocalDate?) = dataSource.update {
+        it.copy(termStartDateIso = date?.toString())
+    }
+
+    suspend fun setTotalWeeks(weeks: Int) = dataSource.update {
+        it.copy(totalWeeks = weeks.coerceAtLeast(1))
+    }
+
+    suspend fun setShowNonCurrentWeekCourses(show: Boolean) = dataSource.update {
+        it.copy(showNonCurrentWeekCourses = show)
+    }
+
+    suspend fun setDeveloperMode(enabled: Boolean) = dataSource.update {
+        it.copy(developerModeEnabled = enabled)
+    }
+
+    suspend fun setDeveloperTestNotificationDelay(seconds: Int) = dataSource.update {
+        it.copy(developerTestNotificationDelaySeconds = seconds.coerceIn(0, 3600))
+    }
+
+    suspend fun setDeveloperTestDndDuration(minutes: Int) = dataSource.update {
+        it.copy(developerTestDndDurationMinutes = minutes.coerceIn(1, 240))
+    }
 
     suspend fun replaceAll(preferences: UserPreferences) = dataSource.update { preferences }
 }

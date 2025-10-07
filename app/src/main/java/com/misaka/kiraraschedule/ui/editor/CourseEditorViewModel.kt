@@ -40,7 +40,8 @@ class CourseEditorViewModel(
                                     localId = UUID.randomUUID().toString(),
                                     dayOfWeek = periods.firstOrNull()?.sequence ?: 1,
                                     startPeriod = periods.firstOrNull()?.sequence ?: 1,
-                                    endPeriod = periods.firstOrNull()?.sequence ?: 1
+                                    endPeriod = periods.firstOrNull()?.sequence ?: 1,
+                                    weeks = emptySet()
                                 )
                             )
                         }
@@ -73,7 +74,8 @@ class CourseEditorViewModel(
                         existingId = time.id.takeIf { idValue -> idValue > 0 },
                         dayOfWeek = time.dayOfWeek,
                         startPeriod = time.startPeriod,
-                        endPeriod = time.endPeriod
+                        endPeriod = time.endPeriod,
+                        weeks = time.weeks.toSet()
                     )
                 }
             ).ensureTimeSlots().revalidate()
@@ -97,12 +99,18 @@ class CourseEditorViewModel(
                 localId = UUID.randomUUID().toString(),
                 dayOfWeek = 1,
                 startPeriod = defaultPeriod,
-                endPeriod = defaultPeriod
+                endPeriod = defaultPeriod,
+                weeks = emptySet()
             )
         ).revalidate()
     }
 
-    fun updateTimeSlot(localId: String, dayOfWeek: Int? = null, startPeriod: Int? = null, endPeriod: Int? = null) {
+    fun updateTimeSlot(
+        localId: String,
+        dayOfWeek: Int? = null,
+        startPeriod: Int? = null,
+        endPeriod: Int? = null
+    ) {
         _uiState.update { state ->
             val updated = state.timeSlots.map { slot ->
                 if (slot.localId != localId) return@map slot
@@ -119,10 +127,30 @@ class CourseEditorViewModel(
         }
     }
 
+    fun updateTimeSlotWeeks(localId: String, weeks: Set<Int>) {
+        _uiState.update { state ->
+            val updated = state.timeSlots.map { slot ->
+                if (slot.localId != localId) return@map slot
+                slot.copy(weeks = weeks)
+            }
+            state.copy(timeSlots = updated).revalidate()
+        }
+    }
+
     fun removeTimeSlot(localId: String) {
         _uiState.update { state ->
             val reduced = state.timeSlots.filterNot { it.localId == localId }
-            state.copy(timeSlots = if (reduced.isEmpty()) state.timeSlots else reduced).revalidate()
+            state.copy(timeSlots = reduced.ifEmpty { state.timeSlots }).revalidate()
+        }
+    }
+
+    fun deleteCourse(onFinished: () -> Unit) {
+        val id = courseId ?: return
+        viewModelScope.launch {
+            courseRepository.getCourse(id)?.let { course ->
+                courseRepository.delete(course)
+            }
+            onFinished()
         }
     }
 
@@ -141,7 +169,8 @@ class CourseEditorViewModel(
                     id = slot.existingId ?: 0,
                     dayOfWeek = slot.dayOfWeek,
                     startPeriod = slot.startPeriod,
-                    endPeriod = slot.endPeriod
+                    endPeriod = slot.endPeriod,
+                    weeks = slot.weeks.toList().sorted()
                 )
             }
         )
@@ -162,7 +191,8 @@ class CourseEditorViewModel(
                         localId = UUID.randomUUID().toString(),
                         dayOfWeek = 1,
                         startPeriod = defaultPeriod,
-                        endPeriod = defaultPeriod
+                        endPeriod = defaultPeriod,
+                        weeks = emptySet()
                     )
                 )
             )

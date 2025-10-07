@@ -9,16 +9,19 @@ import com.misaka.kiraraschedule.data.repository.PeriodRepository
 import com.misaka.kiraraschedule.data.repository.SettingsRepository
 import com.misaka.kiraraschedule.data.settings.BackgroundMode
 import com.misaka.kiraraschedule.data.settings.CourseDisplayField
+import com.misaka.kiraraschedule.data.work.ReminderScheduler
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     private val periodRepository: PeriodRepository,
-    private val dataTransferRepository: DataTransferRepository
+    private val dataTransferRepository: DataTransferRepository,
+    private val reminderScheduler: ReminderScheduler
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -61,6 +64,44 @@ class SettingsViewModel(
 
     fun setDndConfig(enabled: Boolean, lead: Int, release: Int, threshold: Int) {
         viewModelScope.launch { settingsRepository.setDndConfig(enabled, lead, release, threshold) }
+    }
+
+    fun setTermStartDate(date: LocalDate?) {
+        viewModelScope.launch { settingsRepository.setTermStartDate(date) }
+    }
+
+    fun setTotalWeeks(weeks: Int) {
+        viewModelScope.launch { settingsRepository.setTotalWeeks(weeks) }
+    }
+
+    fun setShowNonCurrentWeekCourses(show: Boolean) {
+        viewModelScope.launch { settingsRepository.setShowNonCurrentWeekCourses(show) }
+    }
+
+    fun setDeveloperMode(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setDeveloperMode(enabled) }
+    }
+
+    fun setDeveloperTestNotificationDelay(seconds: Int) {
+        viewModelScope.launch { settingsRepository.setDeveloperTestNotificationDelay(seconds) }
+    }
+
+    fun setDeveloperTestDndDuration(minutes: Int) {
+        viewModelScope.launch { settingsRepository.setDeveloperTestDndDuration(minutes) }
+    }
+
+    fun triggerTestNotification() {
+        val prefs = uiState.value.preferences
+        reminderScheduler.triggerTestNotification(
+            title = "Test notification",
+            subtitle = prefs.timetableName,
+            delaySeconds = prefs.developerTestNotificationDelaySeconds.toLong()
+        )
+    }
+
+    fun triggerTestDnd() {
+        val prefs = uiState.value.preferences
+        reminderScheduler.triggerTestDnd(prefs.developerTestDndDurationMinutes)
     }
 
     fun addPeriod() {

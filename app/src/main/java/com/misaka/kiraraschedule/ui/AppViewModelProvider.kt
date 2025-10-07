@@ -44,8 +44,10 @@ object AppViewModelProvider {
             SettingsViewModel(
                 settingsRepository = container.settingsRepository,
                 periodRepository = container.periodRepository,
-                dataTransferRepository = container.dataTransferRepository
+                dataTransferRepository = container.dataTransferRepository,
+                reminderScheduler = container.reminderScheduler
             )
         }
     }
 }
+

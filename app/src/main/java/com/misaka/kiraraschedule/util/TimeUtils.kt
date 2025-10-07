@@ -1,5 +1,8 @@
 package com.misaka.kiraraschedule.util
 
+import android.annotation.SuppressLint
+
+@SuppressLint("DefaultLocale")
 fun minutesToTimeText(minutes: Int): String {
     val hours = minutes / 60
     val mins = minutes % 60

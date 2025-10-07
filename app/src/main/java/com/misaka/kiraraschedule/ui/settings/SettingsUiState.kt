@@ -1,7 +1,6 @@
 package com.misaka.kiraraschedule.ui.settings
 
 import com.misaka.kiraraschedule.data.model.PeriodDefinition
-import com.misaka.kiraraschedule.data.settings.BackgroundMode
 import com.misaka.kiraraschedule.data.settings.CourseDisplayField
 import com.misaka.kiraraschedule.data.settings.UserPreferences
 
@@ -23,7 +22,8 @@ data class PeriodEditInput(
     val endMinute: Int,
     val label: String?
 ) {
-    fun toMinutesPair(): Pair<Int, Int> = (startHour * 60 + startMinute) to (endHour * 60 + endMinute)
+    fun toMinutesPair(): Pair<Int, Int> =
+        (startHour * 60 + startMinute) to (endHour * 60 + endMinute)
 }
 
 fun PeriodDefinition.toEditInput(): PeriodEditInput = PeriodEditInput(

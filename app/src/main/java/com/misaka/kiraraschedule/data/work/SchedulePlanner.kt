@@ -2,6 +2,8 @@ package com.misaka.kiraraschedule.data.work
 
 import com.misaka.kiraraschedule.data.model.Course
 import com.misaka.kiraraschedule.data.model.PeriodDefinition
+import com.misaka.kiraraschedule.util.computeWeekNumber
+import com.misaka.kiraraschedule.util.isTimeActiveInWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -18,6 +20,8 @@ class SchedulePlanner {
     fun buildUpcomingClasses(
         courses: List<Course>,
         periods: List<PeriodDefinition>,
+        termStartDate: LocalDate?,
+        totalWeeks: Int,
         zoneId: ZoneId = ZoneId.systemDefault(),
         startDate: LocalDate = LocalDate.now(zoneId),
         daysAhead: Long = 14
@@ -26,21 +30,32 @@ class SchedulePlanner {
         val periodMap = periods.associateBy { it.sequence }
         val results = mutableListOf<ScheduledClass>()
         val endDateExclusive = startDate.plusDays(daysAhead + 1)
+        val maxWeeks = totalWeeks.coerceAtLeast(1)
 
         var date = startDate
         while (date.isBefore(endDateExclusive)) {
             val dayValue = date.dayOfWeek.value
-            courses.forEach { course ->
-                course.times.filter { it.dayOfWeek == dayValue }.forEach { time ->
-                    val startPeriod = periodMap[time.startPeriod] ?: return@forEach
-                    val endPeriod = periodMap[time.endPeriod] ?: return@forEach
-                    val startLocalTime = minutesToLocalDateTime(date, startPeriod.startMinutes)
-                    val endLocalTime = minutesToLocalDateTime(date, endPeriod.endMinutes)
-                    results += ScheduledClass(
-                        course = course,
-                        startDateTime = startLocalTime.atZone(zoneId),
-                        endDateTime = endLocalTime.atZone(zoneId)
-                    )
+            val weekNumber = computeWeekNumber(termStartDate, date)
+            val withinTerm =
+                termStartDate?.let { weekNumber != null && weekNumber in 1..maxWeeks } ?: true
+            if (withinTerm) {
+                courses.forEach { course ->
+                    course.times.filter {
+                        it.dayOfWeek == dayValue && isTimeActiveInWeek(
+                            it.weeks,
+                            weekNumber
+                        )
+                    }.forEach { time ->
+                        val startPeriod = periodMap[time.startPeriod] ?: return@forEach
+                        val endPeriod = periodMap[time.endPeriod] ?: return@forEach
+                        val startLocalTime = minutesToLocalDateTime(date, startPeriod.startMinutes)
+                        val endLocalTime = minutesToLocalDateTime(date, endPeriod.endMinutes)
+                        results += ScheduledClass(
+                            course = course,
+                            startDateTime = startLocalTime.atZone(zoneId),
+                            endDateTime = endLocalTime.atZone(zoneId)
+                        )
+                    }
                 }
             }
             date = date.plusDays(1)
@@ -54,3 +69,4 @@ class SchedulePlanner {
         return date.atTime(hour, minute)
     }
 }
+

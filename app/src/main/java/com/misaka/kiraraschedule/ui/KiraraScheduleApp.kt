@@ -1,7 +1,6 @@
 package com.misaka.kiraraschedule.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,7 +23,8 @@ fun KiraraScheduleApp() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Routes.SCHEDULE) {
         composable(Routes.SCHEDULE) {
-            val viewModel: com.misaka.kiraraschedule.ui.schedule.ScheduleViewModel = viewModel(factory = AppViewModelProvider.scheduleFactory)
+            val viewModel: com.misaka.kiraraschedule.ui.schedule.ScheduleViewModel =
+                viewModel(factory = AppViewModelProvider.scheduleFactory)
             ScheduleRoute(
                 viewModel = viewModel,
                 onAddCourse = { navController.navigate("${Routes.COURSE_EDITOR}") },
@@ -41,14 +41,16 @@ fun KiraraScheduleApp() {
                 }
             )
         ) {
-            val viewModel: com.misaka.kiraraschedule.ui.editor.CourseEditorViewModel = viewModel(factory = AppViewModelProvider.courseEditorFactory)
+            val viewModel: com.misaka.kiraraschedule.ui.editor.CourseEditorViewModel =
+                viewModel(factory = AppViewModelProvider.courseEditorFactory)
             CourseEditorRoute(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
         }
         composable(Routes.SETTINGS) {
-            val viewModel: com.misaka.kiraraschedule.ui.settings.SettingsViewModel = viewModel(factory = AppViewModelProvider.settingsFactory)
+            val viewModel: com.misaka.kiraraschedule.ui.settings.SettingsViewModel =
+                viewModel(factory = AppViewModelProvider.settingsFactory)
             SettingsRoute(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }

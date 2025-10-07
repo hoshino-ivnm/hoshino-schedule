@@ -42,7 +42,9 @@ data class CourseTimeEntity(
     @ColumnInfo(name = "start_period")
     val startPeriod: Int,
     @ColumnInfo(name = "end_period")
-    val endPeriod: Int
+    val endPeriod: Int,
+    @ColumnInfo(name = "weeks")
+    val weeks: String? = null
 )
 
 @Entity(tableName = "period_definitions")

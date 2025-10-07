@@ -12,8 +12,9 @@ class CourseRepository(private val courseDao: CourseDao) {
     fun observeAllCourses(): Flow<List<Course>> = courseDao.observeCourses()
         .map { list -> list.map { it.toModel() } }
 
-    fun observeCoursesForDay(dayOfWeek: Int): Flow<List<Course>> = courseDao.observeCoursesForDay(dayOfWeek)
-        .map { list -> list.map { it.toModel() } }
+    fun observeCoursesForDay(dayOfWeek: Int): Flow<List<Course>> =
+        courseDao.observeCoursesForDay(dayOfWeek)
+            .map { list -> list.map { it.toModel() } }
 
     suspend fun getCourse(id: Long): Course? = courseDao.getCourse(id)?.toModel()
 

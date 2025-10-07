@@ -2,7 +2,6 @@ package com.misaka.kiraraschedule.data.work
 
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 
@@ -12,9 +11,9 @@ class DndToggleWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return Result.success()
         val enable = inputData.getBoolean(KEY_ENABLE, false)
-        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (!notificationManager.isNotificationPolicyAccessGranted) {
             return Result.success()
         }

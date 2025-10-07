@@ -1,18 +1,22 @@
-﻿<resources>
+<resources>
     <string name="app_name">Kirara Schedule</string>
     <string name="notification_channel_name">Course reminders</string>
+
+    <!-- Common -->
+    <string name="common_confirm">Confirm</string>
+    <string name="common_cancel">Cancel</string>
 
     <!-- Schedule -->
     <string name="schedule_settings_content_description">Open settings</string>
     <string name="schedule_add_course">Add course</string>
-    <string name="schedule_loading_state">Loading timetable…</string>
+    <string name="schedule_loading_state">Loading timetable...</string>
     <string name="schedule_week_label">Week %1$d %2$s</string>
     <string name="schedule_no_courses">No classes scheduled</string>
     <string name="schedule_empty_periods">Set up class periods in settings to view the timetable.</string>
     <string name="schedule_time_column_title">Time</string>
     <string name="schedule_period_label">#%1$d</string>
-    <string name="schedule_period_time_range">%1$s - %2$s</string>
-    <string name="schedule_course_time_range">%1$s - %2$s</string>
+    <string name="schedule_period_time_range">%1$s\n%2$s</string>
+    <string name="schedule_course_time_range">%1$s-%2$s</string>
     <string name="schedule_delete_course_accessibility">Delete course</string>
     <string name="schedule_remove_course_title">Remove course</string>
     <string name="schedule_remove_course_message">Remove %1$s from the timetable?</string>
@@ -70,6 +74,12 @@
     <string name="course_editor_notes">Notes</string>
     <string name="course_editor_card_color">Card color</string>
     <string name="course_editor_color_auto">Auto</string>
+    <string name="course_editor_custom_color">Custom color��</string>
+    <string name="course_editor_pick_color_title">Choose color</string>
+    <string name="course_editor_channel_red">Red</string>
+    <string name="course_editor_channel_green">Green</string>
+    <string name="course_editor_channel_blue">Blue</string>
+    <string name="course_editor_hex_value">Hex: %1$s</string>
     <string name="course_editor_time_slots">Time slots</string>
     <string name="course_editor_time_slot_help">Set up periods in settings before adding time slots.</string>
     <string name="course_editor_add_time_slot">Add time slot</string>
@@ -77,8 +87,68 @@
     <string name="course_editor_start_period">Start</string>
     <string name="course_editor_end_period">End</string>
     <string name="course_editor_remove_time_slot">Remove time slot</string>
+    <!-- Schedule header / weeks -->
+    <string name="schedule_viewing_week_current">Week %1$d (current)</string>
+    <string name="schedule_viewing_week_label">Week %1$d</string>
+    <string name="schedule_viewing_week_beyond">Week %1$d (out of term)</string>
+    <string name="schedule_viewing_week_unknown">Week unknown</string>
+    <string name="schedule_current_week_label">Current week: %1$d</string>
+    <string name="schedule_course_inactive_badge">Not this week</string>
 
-    <!-- Snackbar -->
-    <string name="common_export">Export</string>
-    <string name="common_import">Import</string>
+    <!-- Settings: term / weeks -->
+    <string name="settings_term_details_title">Term</string>
+    <string name="settings_term_start_label">Term start date</string>
+    <string name="settings_term_start_not_set">Not set</string>
+    <string name="settings_term_start_pick">Pick date</string>
+    <string name="settings_term_start_clear">Clear</string>
+    <string name="settings_total_weeks_label">Total weeks</string>
+    <string name="settings_total_weeks_hint">Number of teaching weeks in the term</string>
+    <string name="settings_show_non_current_week_title">Show non-current week classes</string>
+    <string name="settings_show_non_current_week_hint">When off, only classes active this week are shown.</string>
+
+    <!-- Course editor: weeks & delete -->
+    <string name="course_editor_edit_weeks">Edit weeks</string>
+    <string name="course_editor_weeks_all">All weeks</string>
+    <string name="course_editor_weeks_selected">Weeks: %1$s</string>
+    <string name="course_editor_weeks_dialog_title">Select weeks</string>
+    <string name="course_editor_weeks_range_label">Range: %1$d - %2$d</string>
+    <string name="course_editor_weeks_apply_range">Add range</string>
+    <string name="course_editor_select_all">Select all</string>
+    <string name="course_editor_clear_weeks">Clear</string>
+    <string name="course_editor_delete">Delete</string>
+    <string name="course_editor_delete_title">Delete course</string>
+    <string name="course_editor_delete_message">Remove this course and all its time slots?</string>
+    <string name="course_editor_delete_confirm">Delete</string>
+    <string name="course_editor_delete_cancel">Cancel</string>
+\n    <!-- Additional settings strings -->
+    <string name="settings_weekend_section">Weekend</string>
+    <string name="settings_reminder_lead_label_short">Remind before class</string>
+    <string name="settings_developer_title">Developer Tools</string>
+    <string name="settings_developer_entry_title">Developer tools</string>
+    <string name="settings_developer_entry_subtitle">Test notifications and DND automation</string>
+    <string name="settings_about_entry_subtitle">Version, links and acknowledgements</string>
+    <string name="settings_developer_mode_section">Developer mode</string>
+    <string name="settings_developer_mode_enable">Enable developer mode</string>
+    <string name="settings_developer_notifications_disabled">Notifications are disabled for this app.</string>
+    <string name="settings_developer_notifications_open_settings">Open notification settings</string>
+    <string name="settings_developer_testing_section">Testing</string>
+    <string name="settings_developer_test_notification_delay">Test notification delay (seconds)</string>
+    <string name="settings_developer_send_test_notification">Send test notification</string>
+    <string name="settings_developer_test_dnd_duration">Test DND duration (minutes)</string>
+    <string name="settings_developer_toggle_dnd">Toggle DND for test duration</string>
+    <string name="settings_developer_test_notification_scheduled">Test notification scheduled.</string>
+    <string name="settings_developer_test_dnd_scheduled">Test DND toggle scheduled.</string>
+    <string name="settings_about_title">About</string>
+    <string name="settings_about_app_section">Application</string>
+    <string name="settings_about_links">Links</string>
+    <string name="settings_about_version">Version: %1$s</string>
+    <string name="settings_about_author">Author: misaka10843</string>
+    <string name="settings_about_open_repo">Open project repository</string>
+    <string name="settings_about_view_license">View license</string>
+    <string name="settings_about_repo_url" translatable="false">https://github.com/misaka10843/kiraraschedule</string>
+    <string name="settings_about_license_url" translatable="false">https://github.com/misaka10843/kiraraschedule/blob/main/LICENSE</string>
+    <string name="settings_slider_minutes_suffix">min</string>
+    <string name="settings_slider_seconds_suffix">sec</string>
 </resources>
+
+

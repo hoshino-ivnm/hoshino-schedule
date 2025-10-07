@@ -19,14 +19,23 @@ data class UserPreferences(
     val timetableName: String = "My Timetable",
     val backgroundMode: BackgroundMode = BackgroundMode.COLOR,
     val backgroundValue: String = "#FFBB86FC",
-    val visibleFields: Set<CourseDisplayField> = setOf(CourseDisplayField.NAME, CourseDisplayField.TEACHER),
+    val visibleFields: Set<CourseDisplayField> = setOf(
+        CourseDisplayField.NAME,
+        CourseDisplayField.TEACHER
+    ),
     val reminderLeadMinutes: Int = 10,
     val dndEnabled: Boolean = false,
     val dndLeadMinutes: Int = 5,
     val dndReleaseMinutes: Int = 5,
     val dndSkipBreakThresholdMinutes: Int = 15,
     val showSaturday: Boolean = true,
-    val showSunday: Boolean = true
+    val showSunday: Boolean = true,
+    val termStartDateIso: String? = null,
+    val totalWeeks: Int = 20,
+    val showNonCurrentWeekCourses: Boolean = true,
+    val developerModeEnabled: Boolean = false,
+    val developerTestNotificationDelaySeconds: Int = 5,
+    val developerTestDndDurationMinutes: Int = 5
 )
 
 class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStore<Preferences>) {
@@ -42,6 +51,13 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
     private val dndSkipThresholdKey = intPreferencesKey("dnd_skip_threshold")
     private val showSaturdayKey = intPreferencesKey("show_saturday")
     private val showSundayKey = intPreferencesKey("show_sunday")
+    private val termStartDateKey = stringPreferencesKey("term_start_date")
+    private val totalWeeksKey = intPreferencesKey("total_weeks")
+    private val showNonCurrentWeekKey = intPreferencesKey("show_non_current_week")
+    private val developerModeKey = intPreferencesKey("developer_mode")
+    private val developerTestNotificationDelayKey =
+        intPreferencesKey("developer_test_notification_delay")
+    private val developerTestDndDurationKey = intPreferencesKey("developer_test_dnd_duration")
 
     private val defaults = UserPreferences()
 
@@ -62,6 +78,16 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
             prefs[dndSkipThresholdKey] = updated.dndSkipBreakThresholdMinutes
             prefs[showSaturdayKey] = if (updated.showSaturday) 1 else 0
             prefs[showSundayKey] = if (updated.showSunday) 1 else 0
+            if (updated.termStartDateIso.isNullOrBlank()) {
+                prefs.remove(termStartDateKey)
+            } else {
+                prefs[termStartDateKey] = updated.termStartDateIso
+            }
+            prefs[totalWeeksKey] = updated.totalWeeks
+            prefs[showNonCurrentWeekKey] = if (updated.showNonCurrentWeekCourses) 1 else 0
+            prefs[developerModeKey] = if (updated.developerModeEnabled) 1 else 0
+            prefs[developerTestNotificationDelayKey] = updated.developerTestNotificationDelaySeconds
+            prefs[developerTestDndDurationKey] = updated.developerTestDndDurationMinutes
         }
     }
 
@@ -82,9 +108,20 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
             dndEnabled = (this[dndEnabledKey] ?: if (defaults.dndEnabled) 1 else 0) == 1,
             dndLeadMinutes = this[dndLeadMinutesKey] ?: defaults.dndLeadMinutes,
             dndReleaseMinutes = this[dndReleaseMinutesKey] ?: defaults.dndReleaseMinutes,
-            dndSkipBreakThresholdMinutes = this[dndSkipThresholdKey] ?: defaults.dndSkipBreakThresholdMinutes,
+            dndSkipBreakThresholdMinutes = this[dndSkipThresholdKey]
+                ?: defaults.dndSkipBreakThresholdMinutes,
             showSaturday = (this[showSaturdayKey] ?: if (defaults.showSaturday) 1 else 0) == 1,
-            showSunday = (this[showSundayKey] ?: if (defaults.showSunday) 1 else 0) == 1
+            showSunday = (this[showSundayKey] ?: if (defaults.showSunday) 1 else 0) == 1,
+            termStartDateIso = this[termStartDateKey]?.takeIf { it.isNotBlank() },
+            totalWeeks = this[totalWeeksKey] ?: defaults.totalWeeks,
+            showNonCurrentWeekCourses = (this[showNonCurrentWeekKey]
+                ?: if (defaults.showNonCurrentWeekCourses) 1 else 0) == 1,
+            developerModeEnabled = (this[developerModeKey]
+                ?: if (defaults.developerModeEnabled) 1 else 0) == 1,
+            developerTestNotificationDelaySeconds = this[developerTestNotificationDelayKey]
+                ?: defaults.developerTestNotificationDelaySeconds,
+            developerTestDndDurationMinutes = this[developerTestDndDurationKey]
+                ?: defaults.developerTestDndDurationMinutes
         )
     }
 }

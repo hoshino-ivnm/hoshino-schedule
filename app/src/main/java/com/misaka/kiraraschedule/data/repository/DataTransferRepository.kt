@@ -11,7 +11,6 @@ import com.misaka.kiraraschedule.data.model.PeriodDefinition
 import com.misaka.kiraraschedule.data.settings.UserPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 

@@ -22,5 +22,6 @@ data class TimeSlotInput(
     val existingId: Long? = null,
     val dayOfWeek: Int,
     val startPeriod: Int,
-    val endPeriod: Int
+    val endPeriod: Int,
+    val weeks: Set<Int> = emptySet()
 )

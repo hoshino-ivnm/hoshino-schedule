@@ -18,9 +18,9 @@ interface CourseDao {
     @Transaction
     @Query(
         "SELECT * FROM courses " +
-            "INNER JOIN course_times ON courses.course_id = course_times.course_owner_id " +
-            "WHERE course_times.day_of_week = :dayOfWeek " +
-            "ORDER BY course_times.start_period ASC"
+                "INNER JOIN course_times ON courses.course_id = course_times.course_owner_id " +
+                "WHERE course_times.day_of_week = :dayOfWeek " +
+                "ORDER BY course_times.start_period ASC"
     )
     fun observeCoursesForDay(dayOfWeek: Int): Flow<List<CourseWithTimes>>
 

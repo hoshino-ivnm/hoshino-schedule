@@ -1,11 +1,14 @@
 package com.misaka.kiraraschedule.ui.settings
 
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,16 +19,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -36,6 +46,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,22 +58,39 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.misaka.kiraraschedule.R
 import com.misaka.kiraraschedule.data.model.PeriodDefinition
-import com.misaka.kiraraschedule.data.settings.BackgroundMode
 import com.misaka.kiraraschedule.data.settings.CourseDisplayField
 import com.misaka.kiraraschedule.data.settings.UserPreferences
+import com.misaka.kiraraschedule.util.termStartDate
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.roundToInt
+
+private const val MaxReminderLeadMinutes = 180
+private const val MaxDndLeadMinutes = 60
+private const val MaxDndReleaseMinutes = 60
+private const val MaxDndSkipThresholdMinutes = 180
+private const val MaxTotalWeeks = 40
+private const val MaxTestNotificationDelaySeconds = 60
+private const val MaxTestDndDurationMinutes = 120
+
+enum class SettingsPage { Main, Developer, About }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     state: SettingsUiState,
+    page: SettingsPage,
     snackbarHostState: SnackbarHostState,
+    onNavigate: (SettingsPage) -> Unit,
     onBack: () -> Unit,
     onTimetableNameChange: (String) -> Unit,
     onBackgroundColorSelected: (String) -> Unit,
@@ -71,207 +99,609 @@ fun SettingsScreen(
     onVisibleFieldsChange: (Set<CourseDisplayField>) -> Unit,
     onReminderLeadChange: (Int) -> Unit,
     onDndConfigChange: (Boolean, Int, Int, Int) -> Unit,
+    onTermStartDateChange: (LocalDate?) -> Unit,
+    onTotalWeeksChange: (Int) -> Unit,
+    onShowNonCurrentWeekCoursesChange: (Boolean) -> Unit,
     onWeekendVisibilityChange: (Boolean, Boolean) -> Unit,
     onRequestDndAccess: () -> Unit,
     onAddPeriod: () -> Unit,
     onUpdatePeriod: (PeriodEditInput) -> Unit,
     onRemovePeriod: (Int) -> Unit,
     onExport: () -> Unit,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    onDeveloperModeChange: (Boolean) -> Unit,
+    onDeveloperNotificationDelayChange: (Int) -> Unit,
+    onDeveloperDndDurationChange: (Int) -> Unit,
+    onTriggerTestNotification: () -> Unit,
+    onTriggerTestDnd: () -> Unit,
+    notificationsEnabled: Boolean,
+    onOpenNotificationSettings: () -> Unit,
+    onOpenAboutLink: (String) -> Unit
 ) {
-    val scrollState = rememberScrollState()
-    val prefs = state.preferences
-    val colorOptions = remember {
-        listOf(UserPreferences().backgroundValue, "#FFB300", "#FF7043", "#8BC34A", "#29B6F6", "#9C27B0")
+    val preferences = state.preferences
+    val zoneId = remember { ZoneId.systemDefault() }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var totalWeeksText by remember(preferences.totalWeeks) { mutableStateOf(preferences.totalWeeks.toString()) }
+    remember { DateTimeFormatter.ofPattern("yyyy/MM/dd") }
+    val colorOptions = remember(preferences.backgroundValue) {
+        (listOf(preferences.backgroundValue) + listOf(
+            UserPreferences().backgroundValue,
+            "#FFB300",
+            "#FF7043",
+            "#8BC34A",
+            "#29B6F6",
+            "#9C27B0"
+        )).distinct()
+    }
+
+    val title = when (page) {
+        SettingsPage.Main -> stringResource(R.string.settings_title)
+        SettingsPage.Developer -> stringResource(R.string.settings_developer_title)
+        SettingsPage.About -> stringResource(R.string.settings_about_title)
+    }
+
+    val topBarNavigation: @Composable () -> Unit = {
+        IconButton(onClick = {
+            if (page == SettingsPage.Main) {
+                onBack()
+            } else {
+                onNavigate(SettingsPage.Main)
+            }
+        }) {
+            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
-                navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.course_editor_back)) }
-                }
+                title = { Text(title) },
+                navigationIcon = topBarNavigation
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+        when (page) {
+            SettingsPage.Main -> SettingsMainPage(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                preferences = preferences,
+                periods = state.periods,
+                totalWeeksText = totalWeeksText,
+                onTotalWeeksTextChange = { totalWeeksText = it },
+                onTimetableNameChange = onTimetableNameChange,
+                onBackgroundColorSelected = onBackgroundColorSelected,
+                onBackgroundImageSelect = onBackgroundImageSelect,
+                onClearBackgroundImage = onClearBackgroundImage,
+                onVisibleFieldsChange = onVisibleFieldsChange,
+                onReminderLeadChange = onReminderLeadChange,
+                onDndConfigChange = onDndConfigChange,
+                onTermStartDateChange = onTermStartDateChange,
+                onShowDatePicker = { showDatePicker = true },
+                onTotalWeeksChange = onTotalWeeksChange,
+                onShowNonCurrentWeekCoursesChange = onShowNonCurrentWeekCoursesChange,
+                onWeekendVisibilityChange = onWeekendVisibilityChange,
+                onRequestDndAccess = onRequestDndAccess,
+                onAddPeriod = onAddPeriod,
+                onUpdatePeriod = onUpdatePeriod,
+                onRemovePeriod = onRemovePeriod,
+                onExport = onExport,
+                onImport = onImport,
+                onNavigateToDeveloper = { onNavigate(SettingsPage.Developer) },
+                onNavigateToAbout = { onNavigate(SettingsPage.About) },
+                colorOptions = colorOptions
+            )
+
+            SettingsPage.Developer -> SettingsDeveloperPage(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                preferences = preferences,
+                onDeveloperModeChange = onDeveloperModeChange,
+                onDeveloperNotificationDelayChange = onDeveloperNotificationDelayChange,
+                onDeveloperDndDurationChange = onDeveloperDndDurationChange,
+                onTriggerTestNotification = onTriggerTestNotification,
+                onTriggerTestDnd = onTriggerTestDnd,
+                notificationsEnabled = notificationsEnabled,
+                onOpenNotificationSettings = onOpenNotificationSettings
+            )
+
+            SettingsPage.About -> SettingsAboutPage(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                onOpenLink = onOpenAboutLink
+            )
+        }
+    }
+
+    if (showDatePicker) {
+        val initialDateMillis =
+            preferences.termStartDate()?.atStartOfDay(zoneId)?.toInstant()?.toEpochMilli()
+        val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialDateMillis)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = pickerState.selectedDateMillis
+                    val selectedDate =
+                        millis?.let { Instant.ofEpochMilli(it).atZone(zoneId).toLocalDate() }
+                    onTermStartDateChange(selectedDate)
+                    showDatePicker = false
+                }) {
+                    Text(stringResource(R.string.common_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
         ) {
-            Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.settings_timetable_section), style = MaterialTheme.typography.titleMedium)
-                    OutlinedTextField(
-                        value = prefs.timetableName,
-                        onValueChange = onTimetableNameChange,
-                        label = { Text(stringResource(R.string.settings_timetable_name_label)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(stringResource(R.string.settings_background_label), style = MaterialTheme.typography.titleSmall)
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        colorOptions.forEach { hex ->
-                            val selected = prefs.backgroundMode == BackgroundMode.COLOR && prefs.backgroundValue == hex
-                            ColorOption(colorHex = hex, selected = selected) {
-                                onBackgroundColorSelected(hex)
-                            }
-                        }
-                        TextButton(onClick = onBackgroundImageSelect) {
-                            Text(stringResource(R.string.settings_background_pick))
-                        }
-                        if (prefs.backgroundMode == BackgroundMode.IMAGE) {
-                            TextButton(onClick = onClearBackgroundImage) {
-                                Text(stringResource(R.string.settings_background_use_color))
-                            }
-                        }
-                    }
-                    if (prefs.backgroundMode == BackgroundMode.IMAGE) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(prefs.backgroundValue)
-                                .build(),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(160.dp)
-                                .clip(MaterialTheme.shapes.medium)
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(stringResource(R.string.settings_show_saturday))
-                        Switch(
-                            checked = prefs.showSaturday,
-                            onCheckedChange = { onWeekendVisibilityChange(it, prefs.showSunday) }
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(stringResource(R.string.settings_show_sunday))
-                        Switch(
-                            checked = prefs.showSunday,
-                            onCheckedChange = { onWeekendVisibilityChange(prefs.showSaturday, it) }
-                        )
-                    }
-                }
-            }
-
-            Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.settings_course_fields_title), style = MaterialTheme.typography.titleMedium)
-                    state.availableFields.forEach { field ->
-                        val checked = prefs.visibleFields.contains(field)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = checked, onCheckedChange = {
-                                val newSet = prefs.visibleFields.toMutableSet()
-                                if (it) newSet.add(field) else newSet.remove(field)
-                                if (newSet.isEmpty()) newSet.add(CourseDisplayField.NAME)
-                                onVisibleFieldsChange(newSet)
-                            })
-                            Text(fieldLabel(field))
-                        }
-                    }
-                }
-            }
-
-            Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.settings_reminders_title), style = MaterialTheme.typography.titleMedium)
-                    Text(stringResource(R.string.settings_reminder_lead, prefs.reminderLeadMinutes))
-                    Slider(
-                        value = prefs.reminderLeadMinutes.toFloat(),
-                        onValueChange = { onReminderLeadChange(it.toInt()) },
-                        valueRange = 0f..120f
-                    )
-                }
-            }
-
-            Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.settings_dnd_title), style = MaterialTheme.typography.titleMedium)
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Switch(checked = prefs.dndEnabled, onCheckedChange = { enabled ->
-                            onDndConfigChange(enabled, prefs.dndLeadMinutes, prefs.dndReleaseMinutes, prefs.dndSkipBreakThresholdMinutes)
-                            if (enabled) onRequestDndAccess()
-                        })
-                        Text(if (prefs.dndEnabled) stringResource(R.string.settings_dnd_enabled) else stringResource(R.string.settings_dnd_disabled))
-                        if (!prefs.dndEnabled) {
-                            TextButton(onClick = onRequestDndAccess) {
-                                Text(stringResource(R.string.settings_dnd_grant_access))
-                            }
-                        }
-                    }
-                    if (prefs.dndEnabled) {
-                        SliderWithValue(
-                            label = stringResource(R.string.settings_dnd_enable_before),
-                            value = prefs.dndLeadMinutes,
-                            range = 0..30,
-                            onChange = { onDndConfigChange(true, it, prefs.dndReleaseMinutes, prefs.dndSkipBreakThresholdMinutes) }
-                        )
-                        SliderWithValue(
-                            label = stringResource(R.string.settings_dnd_disable_after),
-                            value = prefs.dndReleaseMinutes,
-                            range = 0..30,
-                            onChange = { onDndConfigChange(true, prefs.dndLeadMinutes, it, prefs.dndSkipBreakThresholdMinutes) }
-                        )
-                        SliderWithValue(
-                            label = stringResource(R.string.settings_dnd_keep_enabled),
-                            value = prefs.dndSkipBreakThresholdMinutes,
-                            range = 0..60,
-                            onChange = { onDndConfigChange(true, prefs.dndLeadMinutes, prefs.dndReleaseMinutes, it) }
-                        )
-                    }
-                }
-            }
-
-            Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.settings_periods_title), style = MaterialTheme.typography.titleMedium)
-                    state.periods.forEach { period ->
-                        PeriodEditorRow(period = period, onUpdate = onUpdatePeriod, onRemove = onRemovePeriod)
-                    }
-                    TextButton(onClick = onAddPeriod) { Text(stringResource(R.string.settings_add_period)) }
-                }
-            }
-
-            Card(colors = sectionCardColors(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.settings_data_section), style = MaterialTheme.typography.titleMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Button(onClick = onExport) { Text(stringResource(R.string.settings_export)) }
-                        Button(onClick = onImport) { Text(stringResource(R.string.settings_import)) }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
+            DatePicker(state = pickerState)
         }
     }
 }
 
 @Composable
-private fun sectionCardColors() = CardDefaults.cardColors(
-    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-)
+private fun SettingsMainPage(
+    modifier: Modifier,
+    preferences: UserPreferences,
+    periods: List<PeriodDefinition>,
+    totalWeeksText: String,
+    onTotalWeeksTextChange: (String) -> Unit,
+    onTimetableNameChange: (String) -> Unit,
+    onBackgroundColorSelected: (String) -> Unit,
+    onBackgroundImageSelect: () -> Unit,
+    onClearBackgroundImage: () -> Unit,
+    onVisibleFieldsChange: (Set<CourseDisplayField>) -> Unit,
+    onReminderLeadChange: (Int) -> Unit,
+    onDndConfigChange: (Boolean, Int, Int, Int) -> Unit,
+    onTermStartDateChange: (LocalDate?) -> Unit,
+    onShowDatePicker: () -> Unit,
+    onTotalWeeksChange: (Int) -> Unit,
+    onShowNonCurrentWeekCoursesChange: (Boolean) -> Unit,
+    onWeekendVisibilityChange: (Boolean, Boolean) -> Unit,
+    onRequestDndAccess: () -> Unit,
+    onAddPeriod: () -> Unit,
+    onUpdatePeriod: (PeriodEditInput) -> Unit,
+    onRemovePeriod: (Int) -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
+    onNavigateToDeveloper: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    colorOptions: List<String>
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        SettingsCard(title = stringResource(R.string.settings_timetable_section)) {
+            OutlinedTextField(
+                value = preferences.timetableName,
+                onValueChange = onTimetableNameChange,
+                label = { Text(stringResource(R.string.settings_timetable_name_label)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            val termStartDate = preferences.termStartDate()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.settings_term_start_label),
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = termStartDate?.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
+                            ?: stringResource(R.string.settings_term_start_not_set),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = onShowDatePicker) {
+                    Text(stringResource(R.string.settings_term_start_pick))
+                }
+                if (termStartDate != null) {
+                    TextButton(onClick = { onTermStartDateChange(null) }) {
+                        Text(stringResource(R.string.settings_term_start_clear))
+                    }
+                }
+            }
+            OutlinedTextField(
+                value = totalWeeksText,
+                onValueChange = { value ->
+                    val filtered = value.filter { it.isDigit() }.take(2)
+                    onTotalWeeksTextChange(filtered)
+                    filtered.toIntOrNull()?.takeIf { it in 1..MaxTotalWeeks }
+                        ?.let(onTotalWeeksChange)
+                },
+                label = { Text(stringResource(R.string.settings_total_weeks_label)) },
+                supportingText = { Text(stringResource(R.string.settings_total_weeks_hint)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.settings_show_non_current_week_title),
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_show_non_current_week_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = preferences.showNonCurrentWeekCourses,
+                    onCheckedChange = onShowNonCurrentWeekCoursesChange
+                )
+            }
+        }
+
+        SettingsCard(title = stringResource(R.string.settings_background_label)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                colorOptions.forEach { hex ->
+                    ColorOption(
+                        colorHex = hex,
+                        selected = preferences.backgroundMode == com.misaka.kiraraschedule.data.settings.BackgroundMode.COLOR && preferences.backgroundValue == hex,
+                        onClick = { onBackgroundColorSelected(hex) }
+                    )
+                }
+                TextButton(onClick = onBackgroundImageSelect) {
+                    Text(stringResource(R.string.settings_background_pick))
+                }
+                if (preferences.backgroundMode == com.misaka.kiraraschedule.data.settings.BackgroundMode.IMAGE) {
+                    TextButton(onClick = onClearBackgroundImage) {
+                        Text(stringResource(R.string.settings_background_use_color))
+                    }
+                }
+            }
+            if (preferences.backgroundMode == com.misaka.kiraraschedule.data.settings.BackgroundMode.IMAGE) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(preferences.backgroundValue)
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                )
+            }
+        }
+
+        SettingsCard(title = stringResource(R.string.settings_course_fields_title)) {
+            CourseDisplayField.entries.forEach { field ->
+                val checked = field in preferences.visibleFields
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val updated = preferences.visibleFields.toMutableSet()
+                            if (checked) {
+                                updated.remove(field)
+                                if (updated.isEmpty()) {
+                                    updated.add(CourseDisplayField.NAME)
+                                }
+                            } else {
+                                updated.add(field)
+                            }
+                            onVisibleFieldsChange(updated)
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Checkbox(checked = checked, onCheckedChange = null)
+                    Text(text = fieldLabel(field))
+                }
+            }
+        }
+
+        SettingsCard(title = stringResource(R.string.settings_reminders_title)) {
+            SliderWithValue(
+                label = stringResource(R.string.settings_reminder_lead_label_short),
+                value = preferences.reminderLeadMinutes,
+                range = 0..MaxReminderLeadMinutes,
+                valueSuffix = stringResource(R.string.settings_slider_minutes_suffix),
+                onChange = onReminderLeadChange
+            )
+        }
+
+        SettingsCard(title = stringResource(R.string.settings_dnd_title)) {
+            SwitchRow(
+                title = stringResource(R.string.settings_dnd_enabled),
+                checked = preferences.dndEnabled,
+                onCheckedChange = { enabled ->
+                    onDndConfigChange(
+                        enabled,
+                        preferences.dndLeadMinutes,
+                        preferences.dndReleaseMinutes,
+                        preferences.dndSkipBreakThresholdMinutes
+                    )
+                }
+            )
+            if (preferences.dndEnabled) {
+                SliderWithValue(
+                    label = stringResource(R.string.settings_dnd_enable_before),
+                    value = preferences.dndLeadMinutes,
+                    range = 0..MaxDndLeadMinutes,
+                    valueSuffix = stringResource(R.string.settings_slider_minutes_suffix),
+                    onChange = { lead ->
+                        onDndConfigChange(
+                            preferences.dndEnabled,
+                            lead,
+                            preferences.dndReleaseMinutes,
+                            preferences.dndSkipBreakThresholdMinutes
+                        )
+                    }
+                )
+                SliderWithValue(
+                    label = stringResource(R.string.settings_dnd_disable_after),
+                    value = preferences.dndReleaseMinutes,
+                    range = 0..MaxDndReleaseMinutes,
+                    valueSuffix = stringResource(R.string.settings_slider_minutes_suffix),
+                    onChange = { release ->
+                        onDndConfigChange(
+                            preferences.dndEnabled,
+                            preferences.dndLeadMinutes,
+                            release,
+                            preferences.dndSkipBreakThresholdMinutes
+                        )
+                    }
+                )
+                SliderWithValue(
+                    label = stringResource(R.string.settings_dnd_keep_enabled),
+                    value = preferences.dndSkipBreakThresholdMinutes,
+                    range = 0..MaxDndSkipThresholdMinutes,
+                    valueSuffix = stringResource(R.string.settings_slider_minutes_suffix),
+                    onChange = { threshold ->
+                        onDndConfigChange(
+                            preferences.dndEnabled,
+                            preferences.dndLeadMinutes,
+                            preferences.dndReleaseMinutes,
+                            threshold
+                        )
+                    }
+                )
+                TextButton(onClick = onRequestDndAccess) {
+                    Text(stringResource(R.string.settings_dnd_grant_access))
+                }
+            }
+        }
+
+        SettingsCard(title = stringResource(R.string.settings_weekend_section)) {
+            SwitchRow(
+                title = stringResource(R.string.settings_show_saturday),
+                checked = preferences.showSaturday,
+                onCheckedChange = { onWeekendVisibilityChange(it, preferences.showSunday) }
+            )
+            SwitchRow(
+                title = stringResource(R.string.settings_show_sunday),
+                checked = preferences.showSunday,
+                onCheckedChange = { onWeekendVisibilityChange(preferences.showSaturday, it) }
+            )
+        }
+
+        SettingsCard(title = stringResource(R.string.settings_periods_title)) {
+            periods.sortedBy { it.sequence }.forEach { period ->
+                PeriodEditorRow(
+                period = period,
+                onUpdate = onUpdatePeriod,
+                onRemove = onRemovePeriod
+            )
+            }
+            Button(onClick = onAddPeriod) {
+                Text(stringResource(R.string.settings_add_period))
+            }
+        }
+
+        SettingsCard(title = stringResource(R.string.settings_data_section)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = onExport) { Text(stringResource(R.string.settings_export)) }
+                Button(onClick = onImport) { Text(stringResource(R.string.settings_import)) }
+            }
+        }
+
+        SettingsNavigationRow(
+            title = stringResource(R.string.settings_developer_entry_title),
+            subtitle = stringResource(R.string.settings_developer_entry_subtitle),
+            onClick = onNavigateToDeveloper
+        )
+
+        SettingsNavigationRow(
+            title = stringResource(R.string.settings_about_title),
+            subtitle = stringResource(R.string.settings_about_entry_subtitle),
+            onClick = onNavigateToAbout
+        )
+    }
+}
 
 @Composable
-private fun SliderWithValue(label: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
+private fun SettingsDeveloperPage(
+    modifier: Modifier,
+    preferences: UserPreferences,
+    onDeveloperModeChange: (Boolean) -> Unit,
+    onDeveloperNotificationDelayChange: (Int) -> Unit,
+    onDeveloperDndDurationChange: (Int) -> Unit,
+    onTriggerTestNotification: () -> Unit,
+    onTriggerTestDnd: () -> Unit,
+    notificationsEnabled: Boolean,
+    onOpenNotificationSettings: () -> Unit
+) {
+    Column(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        SettingsCard(title = stringResource(R.string.settings_developer_mode_section)) {
+            SwitchRow(
+                title = stringResource(R.string.settings_developer_mode_enable),
+                checked = preferences.developerModeEnabled,
+                onCheckedChange = onDeveloperModeChange
+            )
+            if (!notificationsEnabled) {
+                Text(
+                    text = stringResource(R.string.settings_developer_notifications_disabled),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                TextButton(onClick = onOpenNotificationSettings) {
+                    Text(stringResource(R.string.settings_developer_notifications_open_settings))
+                }
+            }
+        }
+
+        if (preferences.developerModeEnabled) {
+            SettingsCard(title = stringResource(R.string.settings_developer_testing_section)) {
+                SliderWithValue(
+                    label = stringResource(R.string.settings_developer_test_notification_delay),
+                    value = preferences.developerTestNotificationDelaySeconds,
+                    range = 0..MaxTestNotificationDelaySeconds,
+                    valueSuffix = stringResource(R.string.settings_slider_seconds_suffix),
+                    onChange = onDeveloperNotificationDelayChange
+                )
+                Button(onClick = onTriggerTestNotification) {
+                    Text(stringResource(R.string.settings_developer_send_test_notification))
+                }
+
+                SliderWithValue(
+                    label = stringResource(R.string.settings_developer_test_dnd_duration),
+                    value = preferences.developerTestDndDurationMinutes,
+                    range = 1..MaxTestDndDurationMinutes,
+                    valueSuffix = stringResource(R.string.settings_slider_minutes_suffix),
+                    onChange = onDeveloperDndDurationChange
+                )
+                Button(onClick = onTriggerTestDnd) {
+                    Text(stringResource(R.string.settings_developer_toggle_dnd))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsAboutPage(
+    modifier: Modifier,
+    onOpenLink: (String) -> Unit
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        val versionName = remember {
+            runCatching {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.packageManager.getPackageInfo(
+                        context.packageName,
+                        PackageManager.PackageInfoFlags.of(0)
+                    ).versionName
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                }
+            }.getOrNull() ?: "1.0"
+        }
+        SettingsCard(title = stringResource(R.string.settings_about_app_section)) {
+            Text(text = stringResource(R.string.settings_about_version, versionName))
+            Text(text = stringResource(R.string.settings_about_author))
+        }
+        SettingsCard(title = stringResource(R.string.settings_about_links)) {
+            TextButton(onClick = { onOpenLink(context.getString(R.string.settings_about_repo_url)) }) {
+                Text(stringResource(R.string.settings_about_open_repo))
+            }
+            TextButton(onClick = { onOpenLink(context.getString(R.string.settings_about_license_url)) }) {
+                Text(stringResource(R.string.settings_about_view_license))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsNavigationRow(title: String, subtitle: String, onClick: () -> Unit) {
+    ListItem(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick),
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.4f
+            )
+        ),
+        headlineContent = { Text(title) },
+        supportingContent = { Text(subtitle) },
+        trailingContent = {
+            Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null)
+        }
+    )
+}
+
+@Composable
+private fun SwitchRow(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun SettingsCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.35f
+            )
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SliderWithValue(
+    label: String,
+    value: Int,
+    range: IntRange,
+    valueSuffix: String,
+    onChange: (Int) -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(R.string.settings_slider_value, label, value))
+        Text(text = "$label: $value $valueSuffix")
         Slider(
             value = value.toFloat(),
-            onValueChange = { onChange(it.toInt()) },
+            onValueChange = { onChange(it.roundToInt().coerceIn(range.first, range.last)) },
             valueRange = range.first.toFloat()..range.last.toFloat()
         )
     }
@@ -279,7 +709,11 @@ private fun SliderWithValue(label: String, value: Int, range: IntRange, onChange
 
 @Composable
 private fun ColorOption(colorHex: String, selected: Boolean, onClick: () -> Unit) {
-    val color = Color(android.graphics.Color.parseColor(colorHex))
+    val color = try {
+        Color(android.graphics.Color.parseColor(colorHex))
+    } catch (e: IllegalArgumentException) {
+        MaterialTheme.colorScheme.primary
+    }
     Box(
         modifier = Modifier
             .size(44.dp)
@@ -302,6 +736,7 @@ private fun fieldLabel(field: CourseDisplayField): String = when (field) {
     CourseDisplayField.NOTES -> stringResource(R.string.settings_field_notes)
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PeriodEditorRow(
@@ -320,7 +755,10 @@ private fun PeriodEditorRow(
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(stringResource(R.string.settings_period_title, period.sequence), style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(R.string.settings_period_title, period.sequence),
+            style = MaterialTheme.typography.titleSmall
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
                 value = startText,
@@ -369,7 +807,8 @@ private fun PeriodEditorRow(
     }
 }
 
-private fun minutesToText(minutes: Int): String = String.format(Locale.getDefault(), "%02d:%02d", minutes / 60, minutes % 60)
+private fun minutesToText(minutes: Int): String =
+    String.format(Locale.getDefault(), "%02d:%02d", minutes / 60, minutes % 60)
 
 private fun String.filterTimeInput(): String {
     val filtered = filter { it.isDigit() || it == ':' }
@@ -384,3 +823,15 @@ private fun parseTimeToMinutes(input: String): Int? {
     if (hour !in 0..23 || minute !in 0..59) return null
     return hour * 60 + minute
 }
+
+
+
+
+
+
+
+
+
+
+
+

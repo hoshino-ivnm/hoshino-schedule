@@ -18,7 +18,8 @@ fun CourseTimeEntity.toModel(): CourseTime = CourseTime(
     id = id,
     dayOfWeek = dayOfWeek,
     startPeriod = startPeriod,
-    endPeriod = endPeriod
+    endPeriod = endPeriod,
+    weeks = weeks.toWeekList()
 )
 
 fun Course.toEntity(): CourseEntity = CourseEntity(
@@ -35,7 +36,8 @@ fun CourseTime.toEntity(courseId: Long): CourseTimeEntity = CourseTimeEntity(
     courseId = courseId,
     dayOfWeek = dayOfWeek,
     startPeriod = startPeriod,
-    endPeriod = endPeriod
+    endPeriod = endPeriod,
+    weeks = weeks.toWeekString()
 )
 
 fun PeriodDefinitionEntity.toModel(): PeriodDefinition = PeriodDefinition(
@@ -53,3 +55,19 @@ fun PeriodDefinition.toEntity(): PeriodDefinitionEntity = PeriodDefinitionEntity
     endMinutes = endMinutes,
     label = label
 )
+
+
+private fun String?.toWeekList(): List<Int> = this
+    ?.split(',')
+    ?.mapNotNull { it.trim().toIntOrNull() }
+    ?.filter { it > 0 }
+    ?.distinct()
+    ?.sorted()
+    ?: emptyList()
+
+private fun List<Int>.toWeekString(): String? = this
+    .filter { it > 0 }
+    .distinct()
+    .sorted()
+    .takeIf { it.isNotEmpty() }
+    ?.joinToString(separator = ",")

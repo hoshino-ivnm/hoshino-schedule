@@ -1,10 +1,11 @@
 package com.misaka.kiraraschedule.data.work
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
-import android.os.Build
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
@@ -17,10 +18,14 @@ class ReminderWorker(
     params: WorkerParameters
 ) : CoroutineWorker(appContext, params) {
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override suspend fun doWork(): Result {
         val courseName = inputData.getString(KEY_COURSE_NAME) ?: return Result.failure()
         val subtitle = inputData.getString(KEY_SUBTITLE)
-        val notificationId = inputData.getInt(KEY_NOTIFICATION_ID, (System.currentTimeMillis() % Int.MAX_VALUE).toInt())
+        val notificationId = inputData.getInt(
+            KEY_NOTIFICATION_ID,
+            (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+        )
 
         ensureChannel()
 
@@ -46,15 +51,14 @@ class ReminderWorker(
     }
 
     private fun ensureChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                applicationContext.getString(R.string.notification_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            manager.createNotificationChannel(channel)
-        }
+        val manager =
+            applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            applicationContext.getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        manager.createNotificationChannel(channel)
     }
 
     companion object {

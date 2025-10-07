@@ -18,7 +18,8 @@ data class CourseTime(
     val id: Long = 0,
     val dayOfWeek: Int,
     val startPeriod: Int,
-    val endPeriod: Int
+    val endPeriod: Int,
+    val weeks: List<Int> = emptyList()
 )
 
 @Serializable
