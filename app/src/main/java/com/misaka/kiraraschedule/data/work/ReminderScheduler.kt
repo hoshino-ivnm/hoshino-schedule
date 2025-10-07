@@ -27,6 +27,7 @@ class ReminderScheduler(
 
     private val widgetScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val widget = ScheduleWidget()
+
     fun triggerTestNotification(title: String, subtitle: String? = null, delaySeconds: Long = 0) {
         val request = OneTimeWorkRequestBuilder<ReminderWorker>()
             .setInputData(
@@ -45,13 +46,42 @@ class ReminderScheduler(
         workManager.enqueue(request)
     }
 
-    fun triggerTestDnd(durationMinutes: Int) {
+    fun triggerTestDndConsecutive(
+        classDurationMinutes: Int,
+        gapMinutes: Int,
+        skipThresholdMinutes: Int,
+        autoDisable: Boolean
+    ) {
+        val now = ZonedDateTime.now(ZoneId.systemDefault())
+        val enableTime = now.plusSeconds(1)
+        val firstClassEnd = enableTime.plusMinutes(classDurationMinutes.coerceAtLeast(1).toLong())
+        val gapEnd = firstClassEnd.plusMinutes(gapMinutes.coerceAtLeast(0).toLong())
+        val secondClassEnd = gapEnd.plusMinutes(classDurationMinutes.coerceAtLeast(1).toLong())
+
+        enqueueDndToggle(enable = true, time = enableTime, now = now)
+
+        if (!autoDisable) return
+
+        val keepEnabled = gapMinutes <= skipThresholdMinutes
+        if (keepEnabled) {
+            enqueueDndToggle(enable = false, time = secondClassEnd, now = now)
+        } else {
+            enqueueDndToggle(enable = false, time = firstClassEnd, now = now)
+            enqueueDndToggle(enable = true, time = gapEnd, now = now)
+            enqueueDndToggle(enable = false, time = secondClassEnd, now = now)
+        }
+    }
+
+    fun triggerTestDnd(durationMinutes: Int, autoDisable: Boolean) {
         val now = ZonedDateTime.now(ZoneId.systemDefault())
         val enableTime = now.plusSeconds(1)
         val disableTime = enableTime.plusMinutes(durationMinutes.coerceAtLeast(1).toLong())
         enqueueDndToggle(enable = true, time = enableTime, now = now)
-        enqueueDndToggle(enable = false, time = disableTime, now = now)
+        if (autoDisable) {
+            enqueueDndToggle(enable = false, time = disableTime, now = now)
+        }
     }
+
     fun rescheduleAll(
         courses: List<Course>,
         periods: List<PeriodDefinition>,
@@ -189,6 +219,8 @@ class ReminderScheduler(
         private const val TEST_NOTIFICATION_TAG = "test_notification"
     }
 }
+
+
 
 
 

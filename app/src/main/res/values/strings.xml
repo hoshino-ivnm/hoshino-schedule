@@ -49,7 +49,7 @@
     <string name="settings_slider_value">%1$s: %2$d minutes</string>
     <string name="settings_periods_title">Periods</string>
     <string name="settings_add_period">Add period</string>
-    <string name="settings_period_title">Period %1$d</string>
+    <string name="settings_period_title">P %1$d</string>
     <string name="settings_period_start_hint">Start (HH:MM)</string>
     <string name="settings_period_end_hint">End (HH:MM)</string>
     <string name="settings_period_label_hint">Label</string>
@@ -74,7 +74,7 @@
     <string name="course_editor_notes">Notes</string>
     <string name="course_editor_card_color">Card color</string>
     <string name="course_editor_color_auto">Auto</string>
-    <string name="course_editor_custom_color">Custom color��</string>
+    <string name="course_editor_custom_color">Custom color...</string>
     <string name="course_editor_pick_color_title">Choose color</string>
     <string name="course_editor_channel_red">Red</string>
     <string name="course_editor_channel_green">Green</string>
@@ -135,9 +135,14 @@
     <string name="settings_developer_test_notification_delay">Test notification delay (seconds)</string>
     <string name="settings_developer_send_test_notification">Send test notification</string>
     <string name="settings_developer_test_dnd_duration">Test DND duration (minutes)</string>
+    <string name="settings_developer_dnd_auto_disable">Automatically disable DND after tests</string>
+    <string name="settings_developer_test_dnd_gap">Gap between test classes (minutes)</string>
+    <string name="settings_developer_test_dnd_skip_threshold">Skip break threshold (minutes)</string>
     <string name="settings_developer_toggle_dnd">Toggle DND for test duration</string>
+    <string name="settings_developer_toggle_dnd_consecutive">Toggle DND across two classes</string>
     <string name="settings_developer_test_notification_scheduled">Test notification scheduled.</string>
     <string name="settings_developer_test_dnd_scheduled">Test DND toggle scheduled.</string>
+    <string name="settings_developer_test_dnd_consecutive_scheduled">Two-class DND test scheduled.</string>
     <string name="settings_about_title">About</string>
     <string name="settings_about_app_section">Application</string>
     <string name="settings_about_links">Links</string>
@@ -150,5 +155,4 @@
     <string name="settings_slider_minutes_suffix">min</string>
     <string name="settings_slider_seconds_suffix">sec</string>
 </resources>
-
 

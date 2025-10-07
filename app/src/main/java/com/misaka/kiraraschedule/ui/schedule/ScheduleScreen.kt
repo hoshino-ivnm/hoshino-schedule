@@ -20,6 +20,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
@@ -41,7 +42,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.misaka.kiraraschedule.R
 import com.misaka.kiraraschedule.data.model.Course
 import com.misaka.kiraraschedule.data.model.PeriodDefinition
@@ -69,11 +74,11 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.max
 
-private val TimeColumnWidth = 60.dp
+private val TimeColumnWidth = 40.dp
 private val DayHeaderHeight = 72.dp
-private val MinCellHeight = 56.dp
-private val CourseCornerRadius = 16.dp
-private val CourseVerticalPadding = 0.dp
+private val MinCellHeight = 70.dp
+private val CourseCornerRadius = 6.dp
+private val CourseVerticalPadding = 2.dp
 private const val PagerMiddlePage = Int.MAX_VALUE / 2
 
 @Composable
@@ -127,41 +132,44 @@ fun ScheduleScreen(
         computeWeekNumber(uiState.termStartDate, displayedWeekStart)
     }
 
-    Scaffold(containerColor = Color.Transparent) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            ScheduleHeader(
-                today = today,
-                viewWeekNumber = viewWeekNumber,
-                currentWeekNumber = uiState.currentWeekNumber,
-                totalWeeks = uiState.totalWeeks,
-                onAddCourse = onAddCourse,
-                onOpenSettings = onOpenSettings
-            )
-
-            HorizontalPager(
-                state = pagerState,
+    Box(modifier = Modifier.fillMaxSize()) {
+        ScheduleBackground(preferences = preferences)
+        Scaffold(containerColor = Color.Transparent) { padding ->
+            Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) { page ->
-                val weekOffset = page - PagerMiddlePage
-                WeekPagerContent(
-                    baseWeekStart = baseWeekStart,
-                    weekOffset = weekOffset,
-                    preferences = preferences,
-                    periods = uiState.periods,
-                    daySchedules = uiState.days.associateBy { it.dayOfWeek },
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                ScheduleHeader(
                     today = today,
-                    locale = locale,
-                    termStartDate = uiState.termStartDate,
+                    viewWeekNumber = viewWeekNumber,
+                    currentWeekNumber = uiState.currentWeekNumber,
                     totalWeeks = uiState.totalWeeks,
-                    showNonCurrentWeekCourses = preferences.showNonCurrentWeekCourses,
-                    onCourseClicked = onCourseClicked
+                    onAddCourse = onAddCourse,
+                    onOpenSettings = onOpenSettings
                 )
+
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) { page ->
+                    val weekOffset = page - PagerMiddlePage
+                    WeekPagerContent(
+                        baseWeekStart = baseWeekStart,
+                        weekOffset = weekOffset,
+                        preferences = preferences,
+                        periods = uiState.periods,
+                        daySchedules = uiState.days.associateBy { it.dayOfWeek },
+                        today = today,
+                        locale = locale,
+                        termStartDate = uiState.termStartDate,
+                        totalWeeks = uiState.totalWeeks,
+                        showNonCurrentWeekCourses = preferences.showNonCurrentWeekCourses,
+                        onCourseClicked = onCourseClicked
+                    )
+                }
             }
         }
     }
@@ -210,17 +218,19 @@ private fun ScheduleHeader(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
-            Text(
-                text = viewText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            currentText?.let { current ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = current,
+                    text = viewText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                currentText?.let { current ->
+                    Text(
+                        text = current,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -296,18 +306,31 @@ private fun WeekPagerContent(
         modifier = Modifier.fillMaxSize()
     ) {
         val availableHeight = maxHeight - DayHeaderHeight
-        val cellHeight: Dp = if (periods.isNotEmpty()) {
-            (availableHeight / periods.size).coerceAtLeast(MinCellHeight)
+        val computedCellHeight: Dp = if (periods.isNotEmpty()) {
+            availableHeight / periods.size
         } else {
             MinCellHeight
         }
+        val shouldEnableVerticalScroll =
+            periods.size > 10 || computedCellHeight < MinCellHeight
+        val cellHeight = if (shouldEnableVerticalScroll) MinCellHeight else computedCellHeight
         val totalColumnHeight = cellHeight * periods.size
-        val scrollState = rememberScrollState()
+        val horizontalScrollState = rememberScrollState()
+        val verticalScrollState = rememberScrollState()
+
+        val baseModifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(horizontalScrollState)
+        val rowModifier = if (shouldEnableVerticalScroll) {
+            baseModifier.verticalScroll(verticalScrollState)
+        } else {
+            baseModifier
+        }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(scrollState)
+            modifier = rowModifier
+                .clip(RoundedCornerShape(CourseCornerRadius))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
         ) {
             TimeColumn(periods = periods, cellHeight = cellHeight)
             displayedDays.forEachIndexed { index, descriptor ->
@@ -423,8 +446,6 @@ private fun DayColumn(
             Column(
                 modifier = Modifier
                     .matchParentSize()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
             ) {
                 periods.forEachIndexed { index, _ ->
                     Box(
@@ -495,7 +516,7 @@ private fun CourseBlock(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(2.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = item.course.name,
@@ -533,6 +554,43 @@ private fun CourseBlock(
                     Text(text = line, style = MaterialTheme.typography.bodySmall)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ScheduleBackground(preferences: UserPreferences) {
+    val fallbackColor = MaterialTheme.colorScheme.background
+    when (preferences.backgroundMode) {
+        com.misaka.kiraraschedule.data.settings.BackgroundMode.COLOR -> {
+            val color = remember(preferences.backgroundValue) {
+                parseHexColorOrNull(preferences.backgroundValue) ?: fallbackColor
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color)
+            )
+        }
+
+        com.misaka.kiraraschedule.data.settings.BackgroundMode.IMAGE -> {
+            val context = LocalContext.current
+            AsyncImage(
+                modifier = Modifier.fillMaxSize(),
+                model = remember(preferences.backgroundValue) {
+                    ImageRequest.Builder(context)
+                        .data(preferences.backgroundValue)
+                        .crossfade(true)
+                        .build()
+                },
+                contentDescription = null,
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.25f))
+            )
         }
     }
 }

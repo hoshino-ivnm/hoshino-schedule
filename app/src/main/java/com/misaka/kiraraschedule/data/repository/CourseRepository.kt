@@ -16,6 +16,9 @@ class CourseRepository(private val courseDao: CourseDao) {
         courseDao.observeCoursesForDay(dayOfWeek)
             .map { list -> list.map { it.toModel() } }
 
+    suspend fun getAllCourses(): List<Course> =
+        courseDao.getCourses().map { it.toModel() }
+
     suspend fun getCourse(id: Long): Course? = courseDao.getCourse(id)?.toModel()
 
     suspend fun upsert(course: Course) {

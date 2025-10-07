@@ -90,6 +90,18 @@ class SettingsViewModel(
         viewModelScope.launch { settingsRepository.setDeveloperTestDndDuration(minutes) }
     }
 
+    fun setDeveloperAutoDisableDnd(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setDeveloperAutoDisableDnd(enabled) }
+    }
+
+    fun setDeveloperTestDndGap(minutes: Int) {
+        viewModelScope.launch { settingsRepository.setDeveloperTestDndGap(minutes) }
+    }
+
+    fun setDeveloperTestDndSkipThreshold(minutes: Int) {
+        viewModelScope.launch { settingsRepository.setDeveloperTestDndSkipThreshold(minutes) }
+    }
+
     fun triggerTestNotification() {
         val prefs = uiState.value.preferences
         reminderScheduler.triggerTestNotification(
@@ -101,7 +113,20 @@ class SettingsViewModel(
 
     fun triggerTestDnd() {
         val prefs = uiState.value.preferences
-        reminderScheduler.triggerTestDnd(prefs.developerTestDndDurationMinutes)
+        reminderScheduler.triggerTestDnd(
+            durationMinutes = prefs.developerTestDndDurationMinutes,
+            autoDisable = prefs.developerAutoDisableDnd
+        )
+    }
+
+    fun triggerTestDndConsecutive() {
+        val prefs = uiState.value.preferences
+        reminderScheduler.triggerTestDndConsecutive(
+            classDurationMinutes = prefs.developerTestDndDurationMinutes,
+            gapMinutes = prefs.developerTestDndGapMinutes,
+            skipThresholdMinutes = prefs.developerTestDndSkipThresholdMinutes,
+            autoDisable = prefs.developerAutoDisableDnd
+        )
     }
 
     fun addPeriod() {

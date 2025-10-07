@@ -25,14 +25,15 @@ class SettingsRepository(private val dataSource: SettingsDataSource) {
         it.copy(reminderLeadMinutes = minutes)
     }
 
-    suspend fun setDndConfig(enabled: Boolean, lead: Int, release: Int, skipThreshold: Int) = dataSource.update {
-        it.copy(
-            dndEnabled = enabled,
-            dndLeadMinutes = lead,
-            dndReleaseMinutes = release,
-            dndSkipBreakThresholdMinutes = skipThreshold
-        )
-    }
+    suspend fun setDndConfig(enabled: Boolean, lead: Int, release: Int, skipThreshold: Int) =
+        dataSource.update {
+            it.copy(
+                dndEnabled = enabled,
+                dndLeadMinutes = lead,
+                dndReleaseMinutes = release,
+                dndSkipBreakThresholdMinutes = skipThreshold
+            )
+        }
 
     suspend fun setWeekendVisibility(showSaturday: Boolean, showSunday: Boolean) =
         dataSource.update { it.copy(showSaturday = showSaturday, showSunday = showSunday) }
@@ -59,6 +60,18 @@ class SettingsRepository(private val dataSource: SettingsDataSource) {
 
     suspend fun setDeveloperTestDndDuration(minutes: Int) = dataSource.update {
         it.copy(developerTestDndDurationMinutes = minutes.coerceIn(1, 240))
+    }
+
+    suspend fun setDeveloperAutoDisableDnd(enabled: Boolean) = dataSource.update {
+        it.copy(developerAutoDisableDnd = enabled)
+    }
+
+    suspend fun setDeveloperTestDndGap(minutes: Int) = dataSource.update {
+        it.copy(developerTestDndGapMinutes = minutes.coerceIn(0, 240))
+    }
+
+    suspend fun setDeveloperTestDndSkipThreshold(minutes: Int) = dataSource.update {
+        it.copy(developerTestDndSkipThresholdMinutes = minutes.coerceIn(0, 240))
     }
 
     suspend fun replaceAll(preferences: UserPreferences) = dataSource.update { preferences }

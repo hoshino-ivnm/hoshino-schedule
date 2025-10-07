@@ -35,7 +35,10 @@ data class UserPreferences(
     val showNonCurrentWeekCourses: Boolean = true,
     val developerModeEnabled: Boolean = false,
     val developerTestNotificationDelaySeconds: Int = 5,
-    val developerTestDndDurationMinutes: Int = 5
+    val developerTestDndDurationMinutes: Int = 5,
+    val developerAutoDisableDnd: Boolean = true,
+    val developerTestDndGapMinutes: Int = 10,
+    val developerTestDndSkipThresholdMinutes: Int = 15
 )
 
 class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStore<Preferences>) {
@@ -58,6 +61,9 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
     private val developerTestNotificationDelayKey =
         intPreferencesKey("developer_test_notification_delay")
     private val developerTestDndDurationKey = intPreferencesKey("developer_test_dnd_duration")
+    private val developerAutoDisableDndKey = intPreferencesKey("developer_auto_disable_dnd")
+    private val developerTestDndGapKey = intPreferencesKey("developer_test_dnd_gap")
+    private val developerTestDndSkipKey = intPreferencesKey("developer_test_dnd_skip")
 
     private val defaults = UserPreferences()
 
@@ -88,6 +94,9 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
             prefs[developerModeKey] = if (updated.developerModeEnabled) 1 else 0
             prefs[developerTestNotificationDelayKey] = updated.developerTestNotificationDelaySeconds
             prefs[developerTestDndDurationKey] = updated.developerTestDndDurationMinutes
+            prefs[developerAutoDisableDndKey] = if (updated.developerAutoDisableDnd) 1 else 0
+            prefs[developerTestDndGapKey] = updated.developerTestDndGapMinutes
+            prefs[developerTestDndSkipKey] = updated.developerTestDndSkipThresholdMinutes
         }
     }
 
@@ -121,7 +130,13 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
             developerTestNotificationDelaySeconds = this[developerTestNotificationDelayKey]
                 ?: defaults.developerTestNotificationDelaySeconds,
             developerTestDndDurationMinutes = this[developerTestDndDurationKey]
-                ?: defaults.developerTestDndDurationMinutes
+                ?: defaults.developerTestDndDurationMinutes,
+            developerAutoDisableDnd = (this[developerAutoDisableDndKey]
+                ?: if (defaults.developerAutoDisableDnd) 1 else 0) == 1,
+            developerTestDndGapMinutes = this[developerTestDndGapKey]
+                ?: defaults.developerTestDndGapMinutes,
+            developerTestDndSkipThresholdMinutes = this[developerTestDndSkipKey]
+                ?: defaults.developerTestDndSkipThresholdMinutes
         )
     }
 }

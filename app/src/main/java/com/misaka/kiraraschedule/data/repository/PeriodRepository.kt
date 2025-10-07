@@ -13,6 +13,9 @@ class PeriodRepository(private val periodDao: PeriodDao) {
     fun observePeriods(): Flow<List<PeriodDefinition>> = periodDao.observePeriodDefinitions()
         .map { list -> list.map { it.toModel() } }
 
+    suspend fun getPeriods(): List<PeriodDefinition> =
+        periodDao.getPeriodDefinitions().map { it.toModel() }
+
     suspend fun replaceAll(periods: List<PeriodDefinition>) {
         periodDao.clear()
         periodDao.insertAll(periods.map { it.toEntity() })

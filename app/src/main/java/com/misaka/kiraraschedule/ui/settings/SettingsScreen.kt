@@ -5,10 +5,13 @@ import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -45,8 +50,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +88,8 @@ private const val MaxDndSkipThresholdMinutes = 180
 private const val MaxTotalWeeks = 40
 private const val MaxTestNotificationDelaySeconds = 60
 private const val MaxTestDndDurationMinutes = 120
+private const val MaxDeveloperTestDndGapMinutes = 180
+private const val MaxDeveloperTestDndSkipMinutes = 240
 
 enum class SettingsPage { Main, Developer, About }
 
@@ -112,8 +121,12 @@ fun SettingsScreen(
     onDeveloperModeChange: (Boolean) -> Unit,
     onDeveloperNotificationDelayChange: (Int) -> Unit,
     onDeveloperDndDurationChange: (Int) -> Unit,
+    onDeveloperAutoDisableDndChange: (Boolean) -> Unit,
+    onDeveloperDndGapChange: (Int) -> Unit,
+    onDeveloperDndSkipThresholdChange: (Int) -> Unit,
     onTriggerTestNotification: () -> Unit,
     onTriggerTestDnd: () -> Unit,
+    onTriggerTestDndConsecutive: () -> Unit,
     notificationsEnabled: Boolean,
     onOpenNotificationSettings: () -> Unit,
     onOpenAboutLink: (String) -> Unit
@@ -203,8 +216,12 @@ fun SettingsScreen(
                 onDeveloperModeChange = onDeveloperModeChange,
                 onDeveloperNotificationDelayChange = onDeveloperNotificationDelayChange,
                 onDeveloperDndDurationChange = onDeveloperDndDurationChange,
+                onDeveloperAutoDisableDndChange = onDeveloperAutoDisableDndChange,
+                onDeveloperDndGapChange = onDeveloperDndGapChange,
+                onDeveloperDndSkipThresholdChange = onDeveloperDndSkipThresholdChange,
                 onTriggerTestNotification = onTriggerTestNotification,
                 onTriggerTestDnd = onTriggerTestDnd,
+                onTriggerTestDndConsecutive = onTriggerTestDndConsecutive,
                 notificationsEnabled = notificationsEnabled,
                 onOpenNotificationSettings = onOpenNotificationSettings
             )
@@ -247,6 +264,7 @@ fun SettingsScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SettingsMainPage(
     modifier: Modifier,
@@ -352,10 +370,9 @@ private fun SettingsMainPage(
         }
 
         SettingsCard(title = stringResource(R.string.settings_background_label)) {
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
             ) {
                 colorOptions.forEach { hex ->
                     ColorOption(
@@ -502,10 +519,10 @@ private fun SettingsMainPage(
         SettingsCard(title = stringResource(R.string.settings_periods_title)) {
             periods.sortedBy { it.sequence }.forEach { period ->
                 PeriodEditorRow(
-                period = period,
-                onUpdate = onUpdatePeriod,
-                onRemove = onRemovePeriod
-            )
+                    period = period,
+                    onUpdate = onUpdatePeriod,
+                    onRemove = onRemovePeriod
+                )
             }
             Button(onClick = onAddPeriod) {
                 Text(stringResource(R.string.settings_add_period))
@@ -540,8 +557,12 @@ private fun SettingsDeveloperPage(
     onDeveloperModeChange: (Boolean) -> Unit,
     onDeveloperNotificationDelayChange: (Int) -> Unit,
     onDeveloperDndDurationChange: (Int) -> Unit,
+    onDeveloperAutoDisableDndChange: (Boolean) -> Unit,
+    onDeveloperDndGapChange: (Int) -> Unit,
+    onDeveloperDndSkipThresholdChange: (Int) -> Unit,
     onTriggerTestNotification: () -> Unit,
     onTriggerTestDnd: () -> Unit,
+    onTriggerTestDndConsecutive: () -> Unit,
     notificationsEnabled: Boolean,
     onOpenNotificationSettings: () -> Unit
 ) {
@@ -580,6 +601,11 @@ private fun SettingsDeveloperPage(
                     Text(stringResource(R.string.settings_developer_send_test_notification))
                 }
 
+                SwitchRow(
+                    title = stringResource(R.string.settings_developer_dnd_auto_disable),
+                    checked = preferences.developerAutoDisableDnd,
+                    onCheckedChange = onDeveloperAutoDisableDndChange
+                )
                 SliderWithValue(
                     label = stringResource(R.string.settings_developer_test_dnd_duration),
                     value = preferences.developerTestDndDurationMinutes,
@@ -587,8 +613,25 @@ private fun SettingsDeveloperPage(
                     valueSuffix = stringResource(R.string.settings_slider_minutes_suffix),
                     onChange = onDeveloperDndDurationChange
                 )
+                SliderWithValue(
+                    label = stringResource(R.string.settings_developer_test_dnd_gap),
+                    value = preferences.developerTestDndGapMinutes,
+                    range = 0..MaxDeveloperTestDndGapMinutes,
+                    valueSuffix = stringResource(R.string.settings_slider_minutes_suffix),
+                    onChange = onDeveloperDndGapChange
+                )
+                SliderWithValue(
+                    label = stringResource(R.string.settings_developer_test_dnd_skip_threshold),
+                    value = preferences.developerTestDndSkipThresholdMinutes,
+                    range = 0..MaxDeveloperTestDndSkipMinutes,
+                    valueSuffix = stringResource(R.string.settings_slider_minutes_suffix),
+                    onChange = onDeveloperDndSkipThresholdChange
+                )
                 Button(onClick = onTriggerTestDnd) {
                     Text(stringResource(R.string.settings_developer_toggle_dnd))
+                }
+                Button(onClick = onTriggerTestDndConsecutive) {
+                    Text(stringResource(R.string.settings_developer_toggle_dnd_consecutive))
                 }
             }
         }
@@ -744,9 +787,11 @@ private fun PeriodEditorRow(
     onUpdate: (PeriodEditInput) -> Unit,
     onRemove: (Int) -> Unit
 ) {
-    var startText by remember(period.id) { mutableStateOf(minutesToText(period.startMinutes)) }
-    var endText by remember(period.id) { mutableStateOf(minutesToText(period.endMinutes)) }
+    var startMinutes by remember(period.id) { mutableStateOf(period.startMinutes) }
+    var endMinutes by remember(period.id) { mutableStateOf(period.endMinutes) }
     var labelText by remember(period.id) { mutableStateOf(period.label.orEmpty()) }
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -761,16 +806,40 @@ private fun PeriodEditorRow(
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
-                value = startText,
-                onValueChange = { startText = it.filterTimeInput() },
+                value = minutesToText(startMinutes),
+                onValueChange = {},
+                readOnly = true,
                 label = { Text(stringResource(R.string.settings_period_start_hint)) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showStartPicker = true },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = stringResource(R.string.settings_period_start_hint)
+                    )
+                }
             )
             OutlinedTextField(
-                value = endText,
-                onValueChange = { endText = it.filterTimeInput() },
+                value = minutesToText(endMinutes),
+                onValueChange = {},
+                readOnly = true,
                 label = { Text(stringResource(R.string.settings_period_end_hint)) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showEndPicker = true },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = stringResource(R.string.settings_period_end_hint)
+                    )
+                }
             )
         }
         OutlinedTextField(
@@ -781,23 +850,24 @@ private fun PeriodEditorRow(
             singleLine = true
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = {
-                val startMinutes = parseTimeToMinutes(startText)
-                val endMinutes = parseTimeToMinutes(endText)
-                if (startMinutes != null && endMinutes != null && startMinutes < endMinutes) {
-                    onUpdate(
-                        PeriodEditInput(
-                            id = period.id,
-                            sequence = period.sequence,
-                            startHour = startMinutes / 60,
-                            startMinute = startMinutes % 60,
-                            endHour = endMinutes / 60,
-                            endMinute = endMinutes % 60,
-                            label = labelText.takeIf { it.isNotBlank() }
+            Button(
+                onClick = {
+                    if (startMinutes < endMinutes) {
+                        onUpdate(
+                            PeriodEditInput(
+                                id = period.id,
+                                sequence = period.sequence,
+                                startHour = startMinutes / 60,
+                                startMinute = startMinutes % 60,
+                                endHour = endMinutes / 60,
+                                endMinute = endMinutes % 60,
+                                label = labelText.takeIf { it.isNotBlank() }
+                            )
                         )
-                    )
-                }
-            }) { Text(stringResource(R.string.settings_period_apply)) }
+                    }
+                },
+                enabled = startMinutes < endMinutes
+            ) { Text(stringResource(R.string.settings_period_apply)) }
             TextButton(onClick = { onRemove(period.sequence) }) {
                 Icon(Icons.Default.Delete, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
@@ -805,33 +875,72 @@ private fun PeriodEditorRow(
             }
         }
     }
+
+    if (showStartPicker) {
+        TimePickerAlertDialog(
+            initialHour = startMinutes / 60,
+            initialMinute = startMinutes % 60,
+            onDismiss = { showStartPicker = false },
+            onConfirm = { hour, minute ->
+                showStartPicker = false
+                val minutes = hour * 60 + minute
+                startMinutes = minutes
+                if (minutes >= endMinutes) {
+                    endMinutes = (minutes + 5).coerceAtMost(23 * 60 + 55)
+                }
+            }
+        )
+    }
+
+    if (showEndPicker) {
+        TimePickerAlertDialog(
+            initialHour = endMinutes / 60,
+            initialMinute = endMinutes % 60,
+            onDismiss = { showEndPicker = false },
+            onConfirm = { hour, minute ->
+                showEndPicker = false
+                val minutes = hour * 60 + minute
+                endMinutes = minutes
+                if (minutes <= startMinutes) {
+                    startMinutes = (minutes - 5).coerceAtLeast(0)
+                }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerAlertDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialHour.coerceIn(0, 23),
+        initialMinute = initialMinute.coerceIn(0, 59),
+        is24Hour = true
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
+                Text(stringResource(R.string.common_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+        text = {
+            TimePicker(state = state)
+        }
+    )
 }
 
 private fun minutesToText(minutes: Int): String =
     String.format(Locale.getDefault(), "%02d:%02d", minutes / 60, minutes % 60)
-
-private fun String.filterTimeInput(): String {
-    val filtered = filter { it.isDigit() || it == ':' }
-    return if (filtered.length <= 5) filtered else filtered.take(5)
-}
-
-private fun parseTimeToMinutes(input: String): Int? {
-    val parts = input.split(':')
-    if (parts.size != 2) return null
-    val hour = parts[0].toIntOrNull() ?: return null
-    val minute = parts[1].toIntOrNull() ?: return null
-    if (hour !in 0..23 || minute !in 0..59) return null
-    return hour * 60 + minute
-}
-
-
-
-
-
-
-
-
-
-
 
 

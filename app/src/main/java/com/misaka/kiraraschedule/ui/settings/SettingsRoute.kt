@@ -97,6 +97,9 @@ fun SettingsRoute(
         onDeveloperModeChange = viewModel::setDeveloperMode,
         onDeveloperNotificationDelayChange = viewModel::setDeveloperTestNotificationDelay,
         onDeveloperDndDurationChange = viewModel::setDeveloperTestDndDuration,
+        onDeveloperAutoDisableDndChange = viewModel::setDeveloperAutoDisableDnd,
+        onDeveloperDndGapChange = viewModel::setDeveloperTestDndGap,
+        onDeveloperDndSkipThresholdChange = viewModel::setDeveloperTestDndSkipThreshold,
         onTriggerTestNotification = {
             viewModel.triggerTestNotification()
             scope.launch {
@@ -107,6 +110,12 @@ fun SettingsRoute(
             viewModel.triggerTestDnd()
             scope.launch {
                 snackbarHostState.showSnackbar(context.getString(R.string.settings_developer_test_dnd_scheduled))
+            }
+        },
+        onTriggerTestDndConsecutive = {
+            viewModel.triggerTestDndConsecutive()
+            scope.launch {
+                snackbarHostState.showSnackbar(context.getString(R.string.settings_developer_test_dnd_consecutive_scheduled))
             }
         },
         notificationsEnabled = notificationsEnabled,
@@ -123,4 +132,3 @@ fun SettingsRoute(
         }
     )
 }
-
