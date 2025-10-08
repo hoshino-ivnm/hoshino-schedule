@@ -24,20 +24,20 @@
 
 ### 主界面
 
-![](./.github/assets/Screenshot_2025-10-08-19-31-25-149_com.misaka.kir.jpg)
+![](./.github/assets/1.jpg)
 
 ### 课程编辑
 
-![](./.github/assets/Screenshot_2025-10-08-19-31-02-354_com.misaka.kir.jpg)
-![](./.github/assets/Screenshot_2025-10-08-19-31-25-149_com.misaka.kir.jpg)
+![](./.github/assets/2.jpg)
+![](./.github/assets/3.jpg)
 
 ### 课程列表
 
-![](./.github/assets/Screenshot_2025-10-08-19-31-58-011_com.misaka.kir.jpg)
+![](./.github/assets/7.jpg)
 
 ### 设置界面
 
-![](./.github/assets/Screenshot_2025-10-08-19-31-06-972_com.misaka.kir.jpg)
-![](./.github/assets/Screenshot_2025-10-08-19-31-31-127_com.misaka.kir.jpg)
-![](./.github/assets/Screenshot_2025-10-08-19-31-35-235_com.misaka.kir.jpg)
+![](./.github/assets/4.jpg)
+![](./.github/assets/5.jpg)
+![](./.github/assets/6.jpg)
 
