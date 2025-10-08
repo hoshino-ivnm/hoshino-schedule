@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.misaka.kiraraschedule"
+    namespace = "com.misaka.hoshinoschedule"
     compileSdk = 36
 
     defaultConfig {
