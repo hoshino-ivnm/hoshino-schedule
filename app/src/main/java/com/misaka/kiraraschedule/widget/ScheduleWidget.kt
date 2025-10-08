@@ -26,11 +26,15 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.misaka.kiraraschedule.AppContainer
 import com.misaka.kiraraschedule.data.work.SchedulePlanner
+import com.misaka.kiraraschedule.R
 import com.misaka.kiraraschedule.util.minutesToTimeText
 import com.misaka.kiraraschedule.util.termStartDate
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 class ScheduleWidget : GlanceAppWidget() {
@@ -39,29 +43,72 @@ class ScheduleWidget : GlanceAppWidget() {
 
     @SuppressLint("RestrictedApi")
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val container = AppContainer(context)
-        val courses = container.courseRepository.observeAllCourses().first()
-        val periods = container.periodRepository.observePeriods().first()
-        val preferences = container.settingsRepository.preferences.first()
+        val noUpcomingText = context.getString(R.string.widget_no_upcoming)
+        val unavailableText = context.getString(R.string.widget_unavailable)
+        val widgetState = runCatching {
+            withContext(Dispatchers.IO) {
+                val container = AppContainer(context)
+                val zone = ZoneId.systemDefault()
+                val today = LocalDate.now(zone)
+                val courses = container.courseRepository.observeAllCourses().first()
+                val periods = container.periodRepository.observePeriods().first()
+                val preferences = container.settingsRepository.preferences.first()
+                val planner = SchedulePlanner()
+                val now = ZonedDateTime.now(zone)
 
-        val zone = ZoneId.systemDefault()
-        val today = LocalDate.now(zone)
-        val planner = SchedulePlanner()
-        val upcoming = planner.buildUpcomingClasses(
-            courses = courses,
-            periods = periods,
-            termStartDate = preferences.termStartDate(),
-            totalWeeks = preferences.totalWeeks,
-            zoneId = zone,
-            startDate = today,
-            daysAhead = 0
-        )
-        val now = java.time.ZonedDateTime.now(zone)
-        val upcomingToday = upcoming
-            .filter { it.startDateTime.toLocalDate() == today }
-            .filter { !it.startDateTime.isBefore(now) }
-            .sortedBy { it.startDateTime }
-            .take(2)
+                val entries = planner.buildUpcomingClasses(
+                    courses = courses,
+                    periods = periods,
+                    termStartDate = preferences.termStartDate(),
+                    totalWeeks = preferences.totalWeeks,
+                    zoneId = zone,
+                    startDate = today,
+                    daysAhead = 0
+                ).asSequence()
+                    .filter { it.startDateTime.toLocalDate() == today }
+                    .filter { !it.startDateTime.isBefore(now) }
+                    .sortedBy { it.startDateTime }
+                    .take(2)
+                    .map { scheduled ->
+                        WidgetEntry(
+                            label = scheduled.startDateTime.format(AM_PM_FORMAT),
+                            name = scheduled.course.name,
+                            subtitle = buildString {
+                                append(
+                                    minutesToTimeText(
+                                        scheduled.startDateTime.hour * 60 + scheduled.startDateTime.minute
+                                    )
+                                )
+                                append("-")
+                                append(
+                                    minutesToTimeText(
+                                        scheduled.endDateTime.hour * 60 + scheduled.endDateTime.minute
+                                    )
+                                )
+                                scheduled.course.teacher?.takeIf { it.isNotBlank() }?.let {
+                                    append(" ")
+                                    append(BULLET_SEPARATOR)
+                                    append(" ")
+                                    append(it)
+                                }
+                                scheduled.course.location?.takeIf { it.isNotBlank() }?.let {
+                                    append(" ")
+                                    append(BULLET_SEPARATOR)
+                                    append(" ")
+                                    append(it)
+                                }
+                            }
+                        )
+                    }
+                    .toList()
+
+                WidgetState(
+                    title = preferences.timetableName,
+                    date = today.format(DATE_FORMAT),
+                    entries = entries
+                )
+            }
+        }.getOrNull()
 
         provideContent {
             Column(
@@ -70,61 +117,61 @@ class ScheduleWidget : GlanceAppWidget() {
                     .background(ColorProvider(MaterialThemeColors.widgetBackground))
                     .padding(12.dp)
             ) {
-                HeaderRow(title = preferences.timetableName, date = today.format(DATE_FORMAT))
-                Spacer(modifier = GlanceModifier.height(8.dp))
-                if (upcomingToday.isEmpty()) {
+                widgetState?.let { state ->
+                    HeaderRow(title = state.title, date = state.date)
+                    Spacer(modifier = GlanceModifier.height(8.dp))
+                    if (state.entries.isEmpty()) {
+                        Text(
+                            text = noUpcomingText,
+                            style = TextStyle(
+                                color = ColorProvider(MaterialThemeColors.onWidget),
+                                fontStyle = FontStyle.Italic
+                            )
+                        )
+                    } else {
+                        state.entries.forEach { entry ->
+                            Row(
+                                modifier = GlanceModifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.Vertical.CenterVertically
+                            ) {
+                                Text(
+                                    text = entry.label,
+                                    style = TextStyle(
+                                        color = ColorProvider(MaterialThemeColors.primary),
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    modifier = GlanceModifier.padding(end = 6.dp)
+                                )
+                                Column(modifier = GlanceModifier.defaultWeight()) {
+                                    Text(
+                                        text = entry.name,
+                                        style = TextStyle(
+                                            color = ColorProvider(MaterialThemeColors.onWidget),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    )
+                                    if (entry.subtitle.isNotBlank()) {
+                                        Text(
+                                            text = entry.subtitle,
+                                            style = TextStyle(
+                                                color = ColorProvider(MaterialThemeColors.onWidgetSecondary)
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } ?: run {
                     Text(
-                        text = "No upcoming classes",
+                        text = unavailableText,
                         style = TextStyle(
                             color = ColorProvider(MaterialThemeColors.onWidget),
                             fontStyle = FontStyle.Italic
                         )
                     )
-                } else {
-                    upcomingToday.forEach { scheduled ->
-                        val amPm = if (scheduled.startDateTime.hour < 12) "AM" else "PM"
-                        Row(
-                            modifier = GlanceModifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.Vertical.CenterVertically
-                        ) {
-                            Text(
-                                text = amPm,
-                                style = TextStyle(
-                                    color = ColorProvider(MaterialThemeColors.primary),
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                modifier = GlanceModifier.padding(end = 6.dp)
-                            )
-                            Column(modifier = GlanceModifier.defaultWeight()) {
-                                Text(
-                                    text = scheduled.course.name,
-                                    style = TextStyle(
-                                        color = ColorProvider(MaterialThemeColors.onWidget),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                                val subtitle = buildString {
-                                    append(minutesToTimeText(scheduled.startDateTime.hour * 60 + scheduled.startDateTime.minute))
-                                    append("-")
-                                    append(minutesToTimeText(scheduled.endDateTime.hour * 60 + scheduled.endDateTime.minute))
-                                    scheduled.course.teacher?.takeIf { it.isNotBlank() }?.let {
-                                        append(" · ")
-                                        append(it)
-                                    }
-                                    scheduled.course.location?.takeIf { it.isNotBlank() }?.let {
-                                        append(" · ")
-                                        append(it)
-                                    }
-                                }
-                                Text(
-                                    text = subtitle,
-                                    style = TextStyle(color = ColorProvider(MaterialThemeColors.onWidgetSecondary))
-                                )
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -132,6 +179,8 @@ class ScheduleWidget : GlanceAppWidget() {
 
     companion object {
         private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd")
+        private val AM_PM_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("a")
+        private const val BULLET_SEPARATOR: Char = '\u00B7'
     }
 }
 
@@ -145,6 +194,18 @@ private object MaterialThemeColors {
     val onWidgetSecondary = 0xFFB0B0B0.toInt()
     val primary = 0xFF80CBC4.toInt()
 }
+
+private data class WidgetState(
+    val title: String,
+    val date: String,
+    val entries: List<WidgetEntry>
+)
+
+private data class WidgetEntry(
+    val label: String,
+    val name: String,
+    val subtitle: String
+)
 
 @SuppressLint("RestrictedApi")
 @Composable

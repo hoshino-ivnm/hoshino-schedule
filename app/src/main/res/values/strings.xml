@@ -163,4 +163,8 @@
     <string name="course_list_empty">No courses yet. Tap the add button to create one.</string>
     <string name="course_list_teacher_label">Teacher: %1$s</string>
     <string name="course_list_location_label">Location: %1$s</string>
+
+    <!-- Widget -->
+    <string name="widget_no_upcoming">No upcoming classes</string>
+    <string name="widget_unavailable">Widget unavailable</string>
 </resources>

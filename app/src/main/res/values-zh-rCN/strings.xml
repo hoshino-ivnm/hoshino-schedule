@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="app_name">Kirara 课表</string>
     <string name="notification_channel_name">课程提醒</string>
 
@@ -14,7 +14,7 @@
     <string name="schedule_no_courses">未安排课程</string>
     <string name="schedule_empty_periods">请在设置中设置上课节次以查看时间表。</string>
     <string name="schedule_time_column_title">时间</string>
-    <string name="schedule_period_label">第 %1$d 节</string>
+    <string name="schedule_period_label">%1$d</string>
     <string name="schedule_period_time_range">%1$s\n%2$s</string>
     <string name="schedule_course_time_range">%1$s-%2$s</string>
     <string name="schedule_delete_course_accessibility">删除课程</string>
@@ -161,4 +161,9 @@
     <string name="course_list_empty">尚无课程。点击添加按钮创建一个。</string>
     <string name="course_list_teacher_label">教师：%1$s</string>
     <string name="course_list_location_label">地点：%1$s</string>
+
+
+    <!-- 小组件 -->
+    <string name="widget_no_upcoming">当前没有即将开始的课程</string>
+    <string name="widget_unavailable">小组件暂时不可用</string>
 </resources>

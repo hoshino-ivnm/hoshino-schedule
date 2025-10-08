@@ -25,7 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Schedule
@@ -50,11 +50,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +66,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -163,7 +164,7 @@ fun SettingsScreen(
                 onNavigate(SettingsPage.Main)
             }
         }) {
-            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
+            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
         }
     }
 
@@ -447,7 +448,11 @@ private fun SettingsMainPage(
 
         SettingsCard(title = stringResource(R.string.settings_dnd_title)) {
             SwitchRow(
-                title = stringResource(R.string.settings_dnd_enabled),
+                title = if (preferences.dndEnabled) {
+                    stringResource(R.string.settings_dnd_enabled)
+                } else {
+                    stringResource(R.string.settings_dnd_disabled)
+                },
                 checked = preferences.dndEnabled,
                 onCheckedChange = { enabled ->
                     onDndConfigChange(
@@ -941,27 +946,44 @@ private fun TimePickerTextField(
     modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = ripple(bounded = true),
-                onClick = onClick
-            ),
-        readOnly = true,
-        label = { Text(label) },
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Default.Schedule,
-                contentDescription = label
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = true,
+            enabled = false,
+            label = { Text(label) },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = label
+                )
+            },
+            colors = TextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                    alpha = 0.35f
+                ),
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledIndicatorColor = MaterialTheme.colorScheme.outline,
+                disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        },
-        interactionSource = interactionSource,
-        singleLine = true
-    )
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(MaterialTheme.shapes.small)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = onClick
+                )
+        )
+    }
 }
 
 private fun minutesToText(minutes: Int): String =
