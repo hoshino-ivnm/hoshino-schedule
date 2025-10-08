@@ -82,6 +82,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
+import androidx.core.graphics.toColorInt
 
 private const val MaxReminderLeadMinutes = 180
 private const val MaxDndLeadMinutes = 60
@@ -772,7 +773,7 @@ private fun SliderWithValue(
 @Composable
 private fun ColorOption(colorHex: String, selected: Boolean, onClick: () -> Unit) {
     val color = try {
-        Color(android.graphics.Color.parseColor(colorHex))
+        Color(colorHex.toColorInt())
     } catch (e: IllegalArgumentException) {
         MaterialTheme.colorScheme.primary
     }

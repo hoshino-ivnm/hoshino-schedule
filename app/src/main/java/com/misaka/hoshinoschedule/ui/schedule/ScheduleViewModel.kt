@@ -2,7 +2,6 @@ package com.misaka.hoshinoschedule.ui.schedule
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.misaka.hoshinoschedule.data.model.Course
 import com.misaka.hoshinoschedule.data.repository.CourseRepository
 import com.misaka.hoshinoschedule.data.repository.PeriodRepository
 import com.misaka.hoshinoschedule.data.repository.SettingsRepository
@@ -35,7 +34,7 @@ class ScheduleViewModel(
             settingsRepository.preferences
         ) { courses, periods, preferences ->
             val periodMap = periods.associateBy { it.sequence }
-            val days = DayOfWeek.values().map { day ->
+            val days = DayOfWeek.entries.map { day ->
                 val dayValue = day.value
                 val items = courses.flatMap { course ->
                     course.times.filter { it.dayOfWeek == dayValue }.mapNotNull { time ->
@@ -87,13 +86,6 @@ class ScheduleViewModel(
                     preferences = prefs
                 )
             }
-        }
-    }
-
-    fun deleteCourse(course: Course) {
-        viewModelScope.launch {
-            courseRepository.delete(course)
-            triggerRefresh()
         }
     }
 

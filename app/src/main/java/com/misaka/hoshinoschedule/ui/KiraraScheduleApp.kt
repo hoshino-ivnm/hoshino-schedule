@@ -29,7 +29,7 @@ fun KiraraScheduleApp() {
                 viewModel(factory = AppViewModelProvider.scheduleFactory)
             ScheduleRoute(
                 viewModel = viewModel,
-                onAddCourse = { navController.navigate("${Routes.COURSE_EDITOR}") },
+                onAddCourse = { navController.navigate(Routes.COURSE_EDITOR) },
                 onEditCourse = { courseId ->
                     navController.navigate("${Routes.COURSE_EDITOR}?${Routes.COURSE_ID}=$courseId")
                 },
@@ -59,7 +59,7 @@ fun KiraraScheduleApp() {
             CourseListRoute(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onAddCourse = { navController.navigate("${Routes.COURSE_EDITOR}") },
+                onAddCourse = { navController.navigate(Routes.COURSE_EDITOR) },
                 onEditCourse = { courseId ->
                     navController.navigate("${Routes.COURSE_EDITOR}?${Routes.COURSE_ID}=$courseId")
                 }

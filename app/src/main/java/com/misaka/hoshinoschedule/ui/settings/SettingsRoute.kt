@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.misaka.hoshinoschedule.R
 import com.misaka.hoshinoschedule.data.settings.UserPreferences
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 @Composable
 fun SettingsRoute(
@@ -128,7 +129,7 @@ fun SettingsRoute(
         },
         onOpenAboutLink = { url ->
             runCatching {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
             }
         }
     )
