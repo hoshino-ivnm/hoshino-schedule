@@ -19,3 +19,25 @@
 3. 开机启动 (防止推送/自动打开/关闭勿扰模式失败)
 4. 防止手机休眠 (防止推送/自动打开/关闭勿扰模式失败)
 5. 运行前台服务 (防止推送/自动打开/关闭勿扰模式失败)
+
+## 相关截图
+
+### 主界面
+
+![](./.github/assets/Screenshot_2025-10-08-19-31-25-149_com.misaka.kir.jpg)
+
+### 课程编辑
+
+![](./.github/assets/Screenshot_2025-10-08-19-31-02-354_com.misaka.kir.jpg)
+![](./.github/assets/Screenshot_2025-10-08-19-31-25-149_com.misaka.kir.jpg)
+
+### 课程列表
+
+![](./.github/assets/Screenshot_2025-10-08-19-31-58-011_com.misaka.kir.jpg)
+
+### 设置界面
+
+![](./.github/assets/Screenshot_2025-10-08-19-31-06-972_com.misaka.kir.jpg)
+![](./.github/assets/Screenshot_2025-10-08-19-31-31-127_com.misaka.kir.jpg)
+![](./.github/assets/Screenshot_2025-10-08-19-31-35-235_com.misaka.kir.jpg)
+
