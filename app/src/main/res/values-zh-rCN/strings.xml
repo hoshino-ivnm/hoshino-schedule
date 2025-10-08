@@ -1,5 +1,5 @@
 ﻿<resources>
-    <string name="app_name">Kirara 课表</string>
+    <string name="app_name">Hoshino课表</string>
     <string name="notification_channel_name">课程提醒</string>
 
     <!-- 通用 -->
