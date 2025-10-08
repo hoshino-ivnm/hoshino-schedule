@@ -38,6 +38,10 @@ class SettingsRepository(private val dataSource: SettingsDataSource) {
     suspend fun setWeekendVisibility(showSaturday: Boolean, showSunday: Boolean) =
         dataSource.update { it.copy(showSaturday = showSaturday, showSunday = showSunday) }
 
+    suspend fun setHideEmptyWeekend(hide: Boolean) = dataSource.update {
+        it.copy(hideEmptyWeekends = hide)
+    }
+
     suspend fun setTermStartDate(date: LocalDate?) = dataSource.update {
         it.copy(termStartDateIso = date?.toString())
     }

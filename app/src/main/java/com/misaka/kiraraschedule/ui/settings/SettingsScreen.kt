@@ -54,6 +54,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -112,6 +113,7 @@ fun SettingsScreen(
     onTotalWeeksChange: (Int) -> Unit,
     onShowNonCurrentWeekCoursesChange: (Boolean) -> Unit,
     onWeekendVisibilityChange: (Boolean, Boolean) -> Unit,
+    onHideEmptyWeekendChange: (Boolean) -> Unit,
     onRequestDndAccess: () -> Unit,
     onAddPeriod: () -> Unit,
     onUpdatePeriod: (PeriodEditInput) -> Unit,
@@ -196,6 +198,7 @@ fun SettingsScreen(
                 onTotalWeeksChange = onTotalWeeksChange,
                 onShowNonCurrentWeekCoursesChange = onShowNonCurrentWeekCoursesChange,
                 onWeekendVisibilityChange = onWeekendVisibilityChange,
+                onHideEmptyWeekendChange = onHideEmptyWeekendChange,
                 onRequestDndAccess = onRequestDndAccess,
                 onAddPeriod = onAddPeriod,
                 onUpdatePeriod = onUpdatePeriod,
@@ -284,6 +287,7 @@ private fun SettingsMainPage(
     onTotalWeeksChange: (Int) -> Unit,
     onShowNonCurrentWeekCoursesChange: (Boolean) -> Unit,
     onWeekendVisibilityChange: (Boolean, Boolean) -> Unit,
+    onHideEmptyWeekendChange: (Boolean) -> Unit,
     onRequestDndAccess: () -> Unit,
     onAddPeriod: () -> Unit,
     onUpdatePeriod: (PeriodEditInput) -> Unit,
@@ -513,6 +517,16 @@ private fun SettingsMainPage(
                 title = stringResource(R.string.settings_show_sunday),
                 checked = preferences.showSunday,
                 onCheckedChange = { onWeekendVisibilityChange(preferences.showSaturday, it) }
+            )
+            SwitchRow(
+                title = stringResource(R.string.settings_hide_empty_weekend),
+                checked = preferences.hideEmptyWeekends,
+                onCheckedChange = onHideEmptyWeekendChange
+            )
+            Text(
+                text = stringResource(R.string.settings_hide_empty_weekend_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -804,42 +818,21 @@ private fun PeriodEditorRow(
             stringResource(R.string.settings_period_title, period.sequence),
             style = MaterialTheme.typography.titleSmall
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TimePickerTextField(
                 value = minutesToText(startMinutes),
-                onValueChange = {},
-                readOnly = true,
-                label = { Text(stringResource(R.string.settings_period_start_hint)) },
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { showStartPicker = true },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = stringResource(R.string.settings_period_start_hint)
-                    )
-                }
+                label = stringResource(R.string.settings_period_start_hint),
+                onClick = { showStartPicker = true },
+                modifier = Modifier.weight(1f)
             )
-            OutlinedTextField(
+            TimePickerTextField(
                 value = minutesToText(endMinutes),
-                onValueChange = {},
-                readOnly = true,
-                label = { Text(stringResource(R.string.settings_period_end_hint)) },
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { showEndPicker = true },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = stringResource(R.string.settings_period_end_hint)
-                    )
-                }
+                label = stringResource(R.string.settings_period_end_hint),
+                onClick = { showEndPicker = true },
+                modifier = Modifier.weight(1f)
             )
         }
         OutlinedTextField(
@@ -937,6 +930,37 @@ private fun TimePickerAlertDialog(
         text = {
             TimePicker(state = state)
         }
+    )
+}
+
+@Composable
+private fun TimePickerTextField(
+    value: String,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(bounded = true),
+                onClick = onClick
+            ),
+        readOnly = true,
+        label = { Text(label) },
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Default.Schedule,
+                contentDescription = label
+            )
+        },
+        interactionSource = interactionSource,
+        singleLine = true
     )
 }
 

@@ -1,4 +1,4 @@
-package com.misaka.kiraraschedule.data.settings
+﻿package com.misaka.kiraraschedule.data.settings
 
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -30,6 +30,7 @@ data class UserPreferences(
     val dndSkipBreakThresholdMinutes: Int = 15,
     val showSaturday: Boolean = true,
     val showSunday: Boolean = true,
+    val hideEmptyWeekends: Boolean = false,
     val termStartDateIso: String? = null,
     val totalWeeks: Int = 20,
     val showNonCurrentWeekCourses: Boolean = true,
@@ -54,6 +55,7 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
     private val dndSkipThresholdKey = intPreferencesKey("dnd_skip_threshold")
     private val showSaturdayKey = intPreferencesKey("show_saturday")
     private val showSundayKey = intPreferencesKey("show_sunday")
+    private val hideEmptyWeekendKey = intPreferencesKey("hide_empty_weekend")
     private val termStartDateKey = stringPreferencesKey("term_start_date")
     private val totalWeeksKey = intPreferencesKey("total_weeks")
     private val showNonCurrentWeekKey = intPreferencesKey("show_non_current_week")
@@ -84,6 +86,7 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
             prefs[dndSkipThresholdKey] = updated.dndSkipBreakThresholdMinutes
             prefs[showSaturdayKey] = if (updated.showSaturday) 1 else 0
             prefs[showSundayKey] = if (updated.showSunday) 1 else 0
+            prefs[hideEmptyWeekendKey] = if (updated.hideEmptyWeekends) 1 else 0
             if (updated.termStartDateIso.isNullOrBlank()) {
                 prefs.remove(termStartDateKey)
             } else {
@@ -121,6 +124,8 @@ class SettingsDataSource(private val dataStore: androidx.datastore.core.DataStor
                 ?: defaults.dndSkipBreakThresholdMinutes,
             showSaturday = (this[showSaturdayKey] ?: if (defaults.showSaturday) 1 else 0) == 1,
             showSunday = (this[showSundayKey] ?: if (defaults.showSunday) 1 else 0) == 1,
+            hideEmptyWeekends = (this[hideEmptyWeekendKey]
+                ?: if (defaults.hideEmptyWeekends) 1 else 0) == 1,
             termStartDateIso = this[termStartDateKey]?.takeIf { it.isNotBlank() },
             totalWeeks = this[totalWeeksKey] ?: defaults.totalWeeks,
             showNonCurrentWeekCourses = (this[showNonCurrentWeekKey]

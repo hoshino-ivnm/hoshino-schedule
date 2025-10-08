@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -468,6 +469,17 @@ private fun WeeksPickerDialog(
                         endWeek
                     ),
                     style = MaterialTheme.typography.labelMedium
+                )
+                RangeSlider(
+                    value = sliderRange,
+                    onValueChange = { range ->
+                        val coercedStart = range.start.coerceIn(1f, actualMax.toFloat())
+                        val coercedEnd =
+                            range.endInclusive.coerceIn(coercedStart, actualMax.toFloat())
+                        sliderRange = coercedStart..coercedEnd
+                    },
+                    valueRange = 1f..actualMax.toFloat(),
+                    steps = (actualMax - 2).coerceAtLeast(0)
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

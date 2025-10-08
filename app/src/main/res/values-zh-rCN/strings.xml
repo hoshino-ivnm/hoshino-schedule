@@ -1,58 +1,61 @@
 <resources>
-    <string name="app_name">Kirara 课程表</string>
+    <string name="app_name">Kirara 课表</string>
     <string name="notification_channel_name">课程提醒</string>
 
-    <!-- Common -->
-    <string name="common_confirm">确定</string>
+    <!-- 通用 -->
+    <string name="common_confirm">确认</string>
     <string name="common_cancel">取消</string>
 
-    <!-- Schedule -->
+    <!-- 课程表 -->
     <string name="schedule_settings_content_description">打开设置</string>
     <string name="schedule_add_course">添加课程</string>
-    <string name="schedule_loading_state">正在加载课程表…</string>
+    <string name="schedule_loading_state">正在加载课表…</string>
     <string name="schedule_week_label">第 %1$d 周 %2$s</string>
-    <string name="schedule_no_courses">暂无课程安排</string>
-    <string name="schedule_empty_periods">请先在设置中配置课程节次，然后再查看课程表。</string>
+    <string name="schedule_no_courses">未安排课程</string>
+    <string name="schedule_empty_periods">请在设置中设置上课节次以查看时间表。</string>
     <string name="schedule_time_column_title">时间</string>
-    <string name="schedule_period_label">%1$d</string>
+    <string name="schedule_period_label">第 %1$d 节</string>
     <string name="schedule_period_time_range">%1$s\n%2$s</string>
     <string name="schedule_course_time_range">%1$s-%2$s</string>
     <string name="schedule_delete_course_accessibility">删除课程</string>
     <string name="schedule_remove_course_title">移除课程</string>
-    <string name="schedule_remove_course_message">确定要将 %1$s 从课程表中移除吗？</string>
+    <string name="schedule_remove_course_message">从课表中移除 %1$s？</string>
     <string name="schedule_remove_course_confirm">删除</string>
     <string name="schedule_remove_course_cancel">取消</string>
+    <string name="schedule_view_courses">查看所有课程</string>
 
-    <!-- Settings -->
+    <!-- 设置 -->
     <string name="settings_title">设置</string>
-    <string name="settings_timetable_section">课程表</string>
+    <string name="settings_timetable_section">课表</string>
     <string name="settings_timetable_name_label">名称</string>
     <string name="settings_background_label">背景</string>
     <string name="settings_background_pick">选择图片</string>
     <string name="settings_background_use_color">使用颜色</string>
-    <string name="settings_show_saturday">显示周六</string>
-    <string name="settings_show_sunday">显示周日</string>
-    <string name="settings_course_fields_title">课程卡片字段</string>
+    <string name="settings_show_saturday">显示星期六</string>
+    <string name="settings_show_sunday">显示星期日</string>
+    <string name="settings_hide_empty_weekend">隐藏空白周末</string>
+    <string name="settings_hide_empty_weekend_hint">当本周六/日没有课时隐藏该日。</string>
+    <string name="settings_course_fields_title">课程卡片显示字段</string>
     <string name="settings_field_name">课程名称</string>
-    <string name="settings_field_teacher">任课老师</string>
-    <string name="settings_field_location">上课地点</string>
+    <string name="settings_field_teacher">教师</string>
+    <string name="settings_field_location">地点</string>
     <string name="settings_field_notes">备注</string>
-    <string name="settings_reminders_title">上课提醒</string>
-    <string name="settings_reminder_lead">提前 %1$d 分钟提醒</string>
+    <string name="settings_reminders_title">提醒</string>
+    <string name="settings_reminder_lead">上课前提醒：%1$d 分钟</string>
     <string name="settings_dnd_title">勿扰模式</string>
     <string name="settings_dnd_enabled">已启用</string>
-    <string name="settings_dnd_disabled">未启用</string>
+    <string name="settings_dnd_disabled">已禁用</string>
     <string name="settings_dnd_enable_before">上课前启用</string>
-    <string name="settings_dnd_disable_after">下课后关闭</string>
-    <string name="settings_dnd_keep_enabled">若课间少于该时长则保持勿扰</string>
-    <string name="settings_dnd_grant_access">前往授权</string>
+    <string name="settings_dnd_disable_after">下课后禁用</string>
+    <string name="settings_dnd_keep_enabled">若课间短于以下时间则保持勿扰</string>
+    <string name="settings_dnd_grant_access">授予权限</string>
     <string name="settings_slider_value">%1$s：%2$d 分钟</string>
-    <string name="settings_periods_title">课程节次</string>
-    <string name="settings_add_period">新增节次</string>
-    <string name="settings_period_title">%1$d</string>
-    <string name="settings_period_start_hint">开始时间 (HH:MM)</string>
-    <string name="settings_period_end_hint">结束时间 (HH:MM)</string>
-    <string name="settings_period_label_hint">标签</string>
+    <string name="settings_periods_title">节次时间</string>
+    <string name="settings_add_period">添加节次</string>
+    <string name="settings_period_title">第 %1$d 节</string>
+    <string name="settings_period_start_hint">开始时间 (时:分)</string>
+    <string name="settings_period_end_hint">结束时间 (时:分)</string>
+    <string name="settings_period_label_hint">标签（可选）</string>
     <string name="settings_period_apply">应用</string>
     <string name="settings_period_remove">移除</string>
     <string name="settings_data_section">数据</string>
@@ -63,14 +66,14 @@
     <string name="settings_import_success">导入成功</string>
     <string name="settings_import_failure">导入失败</string>
 
-    <!-- Course editor -->
+    <!-- 课程编辑器 -->
     <string name="course_editor_new_title">新建课程</string>
     <string name="course_editor_edit_title">编辑课程</string>
     <string name="course_editor_back">返回</string>
     <string name="course_editor_save">保存</string>
     <string name="course_editor_name">课程名称</string>
-    <string name="course_editor_teacher">任课老师</string>
-    <string name="course_editor_location">上课地点</string>
+    <string name="course_editor_teacher">教师</string>
+    <string name="course_editor_location">地点</string>
     <string name="course_editor_notes">备注</string>
     <string name="course_editor_card_color">卡片颜色</string>
     <string name="course_editor_color_auto">自动</string>
@@ -79,79 +82,83 @@
     <string name="course_editor_channel_red">红</string>
     <string name="course_editor_channel_green">绿</string>
     <string name="course_editor_channel_blue">蓝</string>
-    <string name="course_editor_hex_value">十六进制：%1$s</string>
+    <string name="course_editor_hex_value">Hex: %1$s</string>
     <string name="course_editor_time_slots">上课时间</string>
-    <string name="course_editor_time_slot_help">请先在设置中配置节次后再添加上课时间。</string>
-    <string name="course_editor_add_time_slot">添加时间段</string>
+    <string name="course_editor_time_slot_help">添加时间节次前，请先在设置中设置节次时间。</string>
+    <string name="course_editor_add_time_slot">添加时间节次</string>
     <string name="course_editor_day_label">星期</string>
     <string name="course_editor_start_period">开始节次</string>
     <string name="course_editor_end_period">结束节次</string>
-    <string name="course_editor_remove_time_slot">移除该时间段</string>
-    <string name="course_editor_edit_weeks">编辑周</string>
-    <string name="course_editor_weeks_all">所有周</string>
-    <string name="course_editor_weeks_selected">周次：%1$s</string>
-    <string name="course_editor_weeks_dialog_title">选择周次</string>
-    <string name="course_editor_weeks_range_label">范围：%1$d - %2$d 周</string>
-    <string name="course_editor_weeks_apply_range">应用范围</string>
-    <string name="course_editor_select_all">全选</string>
-    <string name="course_editor_clear_weeks">清空</string>
-    <string name="course_editor_delete">删除</string>
-    <string name="course_editor_delete_title">删除课程</string>
-    <string name="course_editor_delete_message">确定删除此课程及其所有时间段吗？</string>
-    <string name="course_editor_delete_confirm">删除</string>
-    <string name="course_editor_delete_cancel">取消</string>
+    <string name="course_editor_remove_time_slot">移除此时间节次</string>
+    <!-- 课表头部 / 周次 -->
+    <string name="schedule_viewing_week_current">第 %1$d 周 (本周)</string>
+    <string name="schedule_viewing_week_label">第 %1$d 周</string>
+    <string name="schedule_viewing_week_beyond">第 %1$d 周 (非教学周)</string>
+    <string name="schedule_viewing_week_unknown">周次未知</string>
+    <string name="schedule_current_week_label">当前周次：第 %1$d 周</string>
+    <string name="schedule_course_inactive_badge">非本周课程</string>
 
-    <!-- Settings additions -->
-    <string name="settings_term_details_title">学期</string>
+    <!-- 设置：学期 / 周次 -->
+    <string name="settings_term_details_title">学期设置</string>
     <string name="settings_term_start_label">学期开始日期</string>
     <string name="settings_term_start_not_set">未设置</string>
     <string name="settings_term_start_pick">选择日期</string>
     <string name="settings_term_start_clear">清除</string>
     <string name="settings_total_weeks_label">总周数</string>
-    <string name="settings_total_weeks_hint">每学期的总周数</string>
-    <string name="settings_show_non_current_week_title">显示非当前周课程</string>
-    <string name="settings_show_non_current_week_hint">关闭后仅显示对应周内的课程。</string>
-    <string name="settings_weekend_section">周末</string>
-    <string name="settings_reminder_lead_label_short">提醒时间</string>
+    <string name="settings_total_weeks_hint">本学期教学周总数</string>
+    <string name="settings_show_non_current_week_title">显示非本周课程</string>
+    <string name="settings_show_non_current_week_hint">关闭后，仅显示本周有效的课程。</string>
 
-    <!-- Developer -->
+    <!-- 课程编辑器：周次与删除 -->
+    <string name="course_editor_edit_weeks">编辑周次</string>
+    <string name="course_editor_weeks_all">所有周次</string>
+    <string name="course_editor_weeks_selected">周次：%1$s</string>
+    <string name="course_editor_weeks_dialog_title">选择周次</string>
+    <string name="course_editor_weeks_range_label">范围：第 %1$d - %2$d 周</string>
+    <string name="course_editor_weeks_apply_range">添加范围</string>
+    <string name="course_editor_select_all">全选</string>
+    <string name="course_editor_clear_weeks">清空</string>
+    <string name="course_editor_delete">删除</string>
+    <string name="course_editor_delete_title">删除课程</string>
+    <string name="course_editor_delete_message">删除此课程及其所有时间节次？</string>
+    <string name="course_editor_delete_confirm">删除</string>
+    <string name="course_editor_delete_cancel">取消</string>
+    <!-- 附加设置字符串 -->
+    <string name="settings_weekend_section">周末</string>
+    <string name="settings_reminder_lead_label_short">上课前提醒</string>
     <string name="settings_developer_title">开发者工具</string>
     <string name="settings_developer_entry_title">开发者工具</string>
-    <string name="settings_developer_entry_subtitle">测试通知与勿扰自动化</string>
-    <string name="settings_about_entry_subtitle">版本、链接与致谢</string>
+    <string name="settings_developer_entry_subtitle">测试通知和勿扰模式自动化</string>
+    <string name="settings_about_entry_subtitle">版本信息、链接与致谢</string>
     <string name="settings_developer_mode_section">开发者模式</string>
     <string name="settings_developer_mode_enable">启用开发者模式</string>
-    <string name="settings_developer_notifications_disabled">当前应用的通知已被关闭。</string>
+    <string name="settings_developer_notifications_disabled">此应用的通知已被禁用。</string>
     <string name="settings_developer_notifications_open_settings">打开通知设置</string>
     <string name="settings_developer_testing_section">测试</string>
     <string name="settings_developer_test_notification_delay">测试通知延迟（秒）</string>
     <string name="settings_developer_send_test_notification">发送测试通知</string>
-    <string name="settings_developer_test_dnd_duration">测试勿扰时长（分钟）</string>
-    <string name="settings_developer_dnd_auto_disable">测试结束后自动关闭勿扰</string>
-    <string name="settings_developer_test_dnd_gap">两节课之间的间隔（分钟）</string>
-    <string name="settings_developer_test_dnd_skip_threshold">忽略间隔阈值（分钟）</string>
-    <string name="settings_developer_toggle_dnd">按时长测试勿扰</string>
-    <string name="settings_developer_toggle_dnd_consecutive">测试两节课的连续勿扰</string>
-    <string name="settings_developer_test_notification_scheduled">已安排测试通知。</string>
-    <string name="settings_developer_test_dnd_scheduled">已安排勿扰测试。</string>
-    <string name="settings_developer_test_dnd_consecutive_scheduled">已安排两节课勿扰测试。</string>
-
-    <!-- About -->
+    <string name="settings_developer_test_dnd_duration">测试勿扰模式时长（分钟）</string>
+    <string name="settings_developer_dnd_auto_disable">测试后自动关闭勿扰模式</string>
+    <string name="settings_developer_test_dnd_gap">测试课程间隔（分钟）</string>
+    <string name="settings_developer_test_dnd_skip_threshold">跳过课间阈值（分钟）</string>
+    <string name="settings_developer_toggle_dnd">在测试时长内切换勿扰模式</string>
+    <string name="settings_developer_toggle_dnd_consecutive">在两节连续课程间切换勿扰模式</string>
+    <string name="settings_developer_test_notification_scheduled">测试通知已安排。</string>
+    <string name="settings_developer_test_dnd_scheduled">勿扰模式切换测试已安排。</string>
+    <string name="settings_developer_test_dnd_consecutive_scheduled">两节课勿扰模式测试已安排。</string>
     <string name="settings_about_title">关于</string>
-    <string name="settings_about_app_section">应用信息</string>
-    <string name="settings_about_links">相关链接</string>
+    <string name="settings_about_app_section">应用</string>
+    <string name="settings_about_links">链接</string>
     <string name="settings_about_version">版本：%1$s</string>
     <string name="settings_about_author">作者：misaka10843</string>
     <string name="settings_about_open_repo">打开项目仓库</string>
     <string name="settings_about_view_license">查看许可证</string>
-
-    <!-- Misc -->
     <string name="settings_slider_minutes_suffix">分钟</string>
     <string name="settings_slider_seconds_suffix">秒</string>
-    <string name="schedule_viewing_week_current">第 %1$d 周 (当前)</string>
-    <string name="schedule_viewing_week_label">第 %1$d 周</string>
-    <string name="schedule_viewing_week_beyond">第 %1$d 周 (学期外)</string>
-    <string name="schedule_viewing_week_unknown">未知周</string>
-    <string name="schedule_current_week_label">当前第 %1$d 周</string>
-    <string name="schedule_course_inactive_badge">非本周</string>
+
+    <!-- 课程列表 -->
+    <string name="course_list_title">所有课程</string>
+    <string name="course_list_empty">尚无课程。点击添加按钮创建一个。</string>
+    <string name="course_list_teacher_label">教师：%1$s</string>
+    <string name="course_list_location_label">地点：%1$s</string>
 </resources>

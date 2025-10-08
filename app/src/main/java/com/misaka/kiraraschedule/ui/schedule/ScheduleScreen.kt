@@ -1,10 +1,12 @@
-package com.misaka.kiraraschedule.ui.schedule
+﻿package com.misaka.kiraraschedule.ui.schedule
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,11 +36,13 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +70,7 @@ import com.misaka.kiraraschedule.util.computeWeekNumber
 import com.misaka.kiraraschedule.util.isTimeActiveInWeek
 import com.misaka.kiraraschedule.util.minutesToTimeText
 import com.misaka.kiraraschedule.util.parseHexColorOrNull
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -76,7 +82,7 @@ import kotlin.math.max
 
 private val TimeColumnWidth = 40.dp
 private val DayHeaderHeight = 72.dp
-private val MinCellHeight = 70.dp
+private val MinCellHeight = 64.dp
 private val CourseCornerRadius = 6.dp
 private val CourseVerticalPadding = 2.dp
 private const val PagerMiddlePage = Int.MAX_VALUE / 2
@@ -86,15 +92,16 @@ fun ScheduleRoute(
     viewModel: ScheduleViewModel,
     onAddCourse: () -> Unit,
     onEditCourse: (Long) -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenCourseList: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ScheduleScreen(
         uiState = uiState,
         onAddCourse = onAddCourse,
         onCourseClicked = { course -> if (course.id > 0) onEditCourse(course.id) },
-
-        onOpenSettings = onOpenSettings
+        onOpenSettings = onOpenSettings,
+        onOpenCourseList = onOpenCourseList
     )
 }
 
@@ -104,7 +111,8 @@ fun ScheduleScreen(
     uiState: ScheduleUiState,
     onAddCourse: () -> Unit,
     onCourseClicked: (Course) -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenCourseList: () -> Unit
 ) {
     val preferences = uiState.preferences ?: run {
         EmptyState(
@@ -122,6 +130,7 @@ fun ScheduleScreen(
     }
     val pagerState =
         rememberPagerState(initialPage = PagerMiddlePage, pageCount = { Int.MAX_VALUE })
+    val scope = rememberCoroutineScope()
     val currentWeekOffset by remember {
         derivedStateOf { pagerState.currentPage - PagerMiddlePage }
     }
@@ -146,7 +155,11 @@ fun ScheduleScreen(
                     currentWeekNumber = uiState.currentWeekNumber,
                     totalWeeks = uiState.totalWeeks,
                     onAddCourse = onAddCourse,
-                    onOpenSettings = onOpenSettings
+                    onOpenCourseList = onOpenCourseList,
+                    onOpenSettings = onOpenSettings,
+                    onTodayClicked = {
+                        scope.launch { pagerState.animateScrollToPage(PagerMiddlePage) }
+                    }
                 )
 
                 HorizontalPager(
@@ -173,7 +186,6 @@ fun ScheduleScreen(
             }
         }
     }
-
 }
 
 @Composable
@@ -183,7 +195,9 @@ private fun ScheduleHeader(
     currentWeekNumber: Int?,
     totalWeeks: Int,
     onAddCourse: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenCourseList: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onTodayClicked: () -> Unit
 ) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
     val dateFormatter = remember(locale) { DateTimeFormatter.ofPattern("yyyy/MM/dd", locale) }
@@ -207,11 +221,20 @@ private fun ScheduleHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 12.dp),
+            .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Bottom,
+        verticalAlignment = Alignment.Bottom
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(bounded = true)
+                ) { onTodayClicked() }
+                .padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Text(
                 text = todayText,
                 style = MaterialTheme.typography.headlineSmall,
@@ -236,13 +259,19 @@ private fun ScheduleHeader(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             IconButton(onClick = onAddCourse) {
                 Icon(
-                    Icons.Default.Add,
+                    imageVector = Icons.Default.Add,
                     contentDescription = stringResource(R.string.schedule_add_course)
+                )
+            }
+            IconButton(onClick = onOpenCourseList) {
+                Icon(
+                    imageVector = Icons.Default.List,
+                    contentDescription = stringResource(R.string.schedule_view_courses)
                 )
             }
             IconButton(onClick = onOpenSettings) {
                 Icon(
-                    Icons.Default.Settings,
+                    imageVector = Icons.Default.Settings,
                     contentDescription = stringResource(R.string.schedule_settings_content_description)
                 )
             }
@@ -250,6 +279,7 @@ private fun ScheduleHeader(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 private fun WeekPagerContent(
@@ -277,13 +307,7 @@ private fun WeekPagerContent(
     val orderedDays = (0 until 7).map { startOfWeek.plusDays(it.toLong()) }
     val maxWeeks = totalWeeks.coerceAtLeast(1)
 
-    val displayedDays = orderedDays.filter {
-        when (it.dayOfWeek) {
-            DayOfWeek.SATURDAY -> preferences.showSaturday
-            DayOfWeek.SUNDAY -> preferences.showSunday
-            else -> true
-        }
-    }.map { date ->
+    val descriptors = orderedDays.map { date ->
         val weekNumber = computeWeekNumber(termStartDate, date)
         val withinTerm = termStartDate == null || (weekNumber != null && weekNumber in 1..maxWeeks)
         DayColumnDescriptor(
@@ -292,6 +316,31 @@ private fun WeekPagerContent(
             weekNumber = weekNumber,
             isWithinTerm = withinTerm
         )
+    }
+
+    val displayedDays = descriptors.filter { descriptor ->
+        val baseVisible = when (descriptor.day) {
+            DayOfWeek.SATURDAY -> preferences.showSaturday
+            DayOfWeek.SUNDAY -> preferences.showSunday
+            else -> true
+        }
+        if (!baseVisible) return@filter false
+        if (preferences.hideEmptyWeekends && descriptor.day in setOf(
+                DayOfWeek.SATURDAY,
+                DayOfWeek.SUNDAY
+            )
+        ) {
+            val schedule = daySchedules[descriptor.day] ?: DaySchedule(descriptor.day, emptyList())
+            val hasRenderableCourse = descriptor.isWithinTerm && schedule.items.any { item ->
+                val startIndex = periods.indexOfFirst { it.sequence == item.time.startPeriod }
+                val endIndex = periods.indexOfFirst { it.sequence == item.time.endPeriod }
+                if (startIndex == -1 || endIndex == -1) return@any false
+                val isActiveWeek = isTimeActiveInWeek(item.time.weeks, descriptor.weekNumber)
+                showNonCurrentWeekCourses || isActiveWeek
+            }
+            if (!hasRenderableCourse) return@filter false
+        }
+        true
     }
 
     if (displayedDays.isEmpty()) {
@@ -306,7 +355,7 @@ private fun WeekPagerContent(
         modifier = Modifier.fillMaxSize()
     ) {
         val availableHeight = maxHeight - DayHeaderHeight
-        val computedCellHeight: Dp = if (periods.isNotEmpty()) {
+        val computedCellHeight = if (periods.isNotEmpty()) {
             availableHeight / periods.size
         } else {
             MinCellHeight
@@ -327,17 +376,12 @@ private fun WeekPagerContent(
             baseModifier
         }
 
-        Row(
-            modifier = rowModifier
-                .clip(RoundedCornerShape(CourseCornerRadius))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-        ) {
+        Row(modifier = rowModifier) {
             TimeColumn(periods = periods, cellHeight = cellHeight)
-            displayedDays.forEachIndexed { index, descriptor ->
+            displayedDays.forEach { descriptor ->
                 val schedule =
                     daySchedules[descriptor.day] ?: DaySchedule(descriptor.day, emptyList())
                 DayColumn(
-                    modifier = Modifier.weight(1f),
                     descriptor = descriptor,
                     periods = periods,
                     schedule = schedule,
@@ -347,7 +391,8 @@ private fun WeekPagerContent(
                     isToday = descriptor.date == today,
                     locale = locale,
                     showNonCurrentWeekCourses = showNonCurrentWeekCourses,
-                    onCourseClicked = onCourseClicked
+                    onCourseClicked = onCourseClicked,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -413,12 +458,11 @@ private fun DayColumn(
     locale: Locale,
     showNonCurrentWeekCourses: Boolean,
     onCourseClicked: (Course) -> Unit,
-    modifier: Modifier
+    modifier: Modifier = Modifier
 ) {
     val headerDateFormatter = remember(locale) { DateTimeFormatter.ofPattern("M/d", locale) }
-    Column(
-        modifier = modifier
-    ) {
+
+    Column(modifier = modifier) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -430,7 +474,11 @@ private fun DayColumn(
                 text = descriptor.date.format(headerDateFormatter),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.SemiBold,
-                color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                color = if (isToday) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
             )
             Text(
                 text = descriptor.day.getDisplayName(TextStyle.SHORT, locale),
@@ -438,14 +486,25 @@ private fun DayColumn(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(columnHeight)
         ) {
+            if (isToday) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                )
+            }
             Column(
                 modifier = Modifier
-                    .matchParentSize()
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
             ) {
                 periods.forEachIndexed { index, _ ->
                     Box(
@@ -460,6 +519,7 @@ private fun DayColumn(
                     )
                 }
             }
+
             schedule.items.forEach { item ->
                 if (!descriptor.isWithinTerm) return@forEach
                 val isActiveWeek = isTimeActiveInWeek(item.time.weeks, descriptor.weekNumber)
@@ -467,6 +527,7 @@ private fun DayColumn(
                 val startIndex = periods.indexOfFirst { it.sequence == item.time.startPeriod }
                 val endIndex = periods.indexOfFirst { it.sequence == item.time.endPeriod }
                 if (startIndex == -1 || endIndex == -1) return@forEach
+
                 val duration = max(1, endIndex - startIndex + 1)
                 val blockHeight = (cellHeight * duration) - (CourseVerticalPadding * 2)
                 CourseBlock(
@@ -601,12 +662,3 @@ private data class DayColumnDescriptor(
     val weekNumber: Int?,
     val isWithinTerm: Boolean
 )
-
-
-
-
-
-
-
-
-

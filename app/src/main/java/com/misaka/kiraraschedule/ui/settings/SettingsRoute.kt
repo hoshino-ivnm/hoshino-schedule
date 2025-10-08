@@ -86,6 +86,7 @@ fun SettingsRoute(
         onTotalWeeksChange = viewModel::setTotalWeeks,
         onShowNonCurrentWeekCoursesChange = viewModel::setShowNonCurrentWeekCourses,
         onWeekendVisibilityChange = viewModel::setWeekendVisibility,
+        onHideEmptyWeekendChange = viewModel::setHideEmptyWeekend,
         onRequestDndAccess = {
             context.startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
         },
