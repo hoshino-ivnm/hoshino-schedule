@@ -139,7 +139,6 @@ class ScheduleWidget : GlanceAppWidget() {
                             text = noUpcomingText,
                             style = TextStyle(
                                 color = ColorProvider(MaterialThemeColors.onWidget),
-                                fontStyle = FontStyle.Italic
                             )
                         )
                     } else {
