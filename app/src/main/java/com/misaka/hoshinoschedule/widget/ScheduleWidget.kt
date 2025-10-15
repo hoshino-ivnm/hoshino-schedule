@@ -3,6 +3,7 @@ package com.misaka.hoshinoschedule.widget
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -25,8 +26,8 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.misaka.hoshinoschedule.AppContainer
-import com.misaka.hoshinoschedule.data.work.SchedulePlanner
 import com.misaka.hoshinoschedule.R
+import com.misaka.hoshinoschedule.data.work.SchedulePlanner
 import com.misaka.hoshinoschedule.util.minutesToTimeText
 import com.misaka.hoshinoschedule.util.termStartDate
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class ScheduleWidget : GlanceAppWidget() {
 
@@ -43,67 +45,79 @@ class ScheduleWidget : GlanceAppWidget() {
 
     @SuppressLint("RestrictedApi")
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val noUpcomingText = context.getString(R.string.widget_no_upcoming)
-        val unavailableText = context.getString(R.string.widget_unavailable)
-        val widgetState = runCatching {
+        val noUpcomingText = safeGetString(context, R.string.widget_no_upcoming) ?: "No upcoming classes"
+        val unavailableText = safeGetString(context, R.string.widget_unavailable) ?: "Widget unavailable"
+
+        val widgetState: WidgetState? = runCatching {
             withContext(Dispatchers.IO) {
                 val container = AppContainer(context)
-                val zone = ZoneId.systemDefault()
-                val today = LocalDate.now(zone)
-                val courses = container.courseRepository.observeAllCourses().first()
-                val periods = container.periodRepository.observePeriods().first()
-                val preferences = container.settingsRepository.preferences.first()
-                val planner = SchedulePlanner()
-                val now = ZonedDateTime.now(zone)
 
-                val entries = planner.buildUpcomingClasses(
+                val zone = runCatching { ZoneId.systemDefault() }.getOrDefault(ZoneId.of("UTC"))
+                val today = runCatching { LocalDate.now(zone) }.getOrDefault(LocalDate.now())
+                val now = runCatching { ZonedDateTime.now(zone) }.getOrDefault(ZonedDateTime.now())
+
+                val courses = runCatching { container.courseRepository.observeAllCourses().first() }
+                    .getOrDefault(emptyList())
+
+                val periods = runCatching { container.periodRepository.observePeriods().first() }
+                    .getOrDefault(emptyList())
+
+                val preferences = runCatching { container.settingsRepository.preferences.first() }
+                    .getOrNull()
+
+                val termStart = runCatching { preferences?.termStartDate() }.getOrNull() ?: today
+                val totalWeeks = runCatching { preferences?.totalWeeks ?: 20 }.getOrDefault(20)
+                    .coerceIn(1, 52)
+                val timetableName = runCatching { preferences?.timetableName?.takeIf { it.isNotBlank() } }
+                    .getOrNull() ?: "Timetable"
+
+                val planner = SchedulePlanner()
+
+                val raw = planner.buildUpcomingClasses(
                     courses = courses,
                     periods = periods,
-                    termStartDate = preferences.termStartDate(),
-                    totalWeeks = preferences.totalWeeks,
+                    termStartDate = termStart,
+                    totalWeeks = totalWeeks,
                     zoneId = zone,
                     startDate = today,
                     daysAhead = 0
-                ).asSequence()
+                )
+
+                val entries = raw.asSequence()
                     .filter { it.startDateTime.toLocalDate() == today }
                     .filter { !it.startDateTime.isBefore(now) }
                     .sortedBy { it.startDateTime }
                     .take(2)
                     .map { scheduled ->
-                        WidgetEntry(
-                            label = scheduled.startDateTime.format(AM_PM_FORMAT),
-                            name = scheduled.course.name,
-                            subtitle = buildString {
-                                append(
-                                    minutesToTimeText(
-                                        scheduled.startDateTime.hour * 60 + scheduled.startDateTime.minute
-                                    )
-                                )
-                                append("-")
-                                append(
-                                    minutesToTimeText(
-                                        scheduled.endDateTime.hour * 60 + scheduled.endDateTime.minute
-                                    )
-                                )
-                                scheduled.course.teacher?.takeIf { it.isNotBlank() }?.let {
-                                    append(" ")
-                                    append(BULLET_SEPARATOR)
-                                    append(" ")
-                                    append(it)
-                                }
-                                scheduled.course.location?.takeIf { it.isNotBlank() }?.let {
-                                    append(" ")
-                                    append(BULLET_SEPARATOR)
-                                    append(" ")
-                                    append(it)
-                                }
+                        val label = runCatching { scheduled.startDateTime.format(AM_PM_FORMAT) }
+                            .getOrDefault("")
+
+                        val timeSpan = runCatching {
+                            val startMin = scheduled.startDateTime.hour * 60 + scheduled.startDateTime.minute
+                            val endMin = scheduled.endDateTime.hour * 60 + scheduled.endDateTime.minute
+                            "${minutesToTimeText(startMin)}-${minutesToTimeText(endMin)}"
+                        }.getOrDefault("")
+
+                        val subtitle = buildString {
+                            append(timeSpan)
+                            scheduled.course.teacher?.takeIf { it.isNotBlank() }?.let {
+                                append(" ").append(BULLET_SEPARATOR).append(" ").append(it)
                             }
+                            scheduled.course.location?.takeIf { it.isNotBlank() }?.let {
+                                append(" ").append(BULLET_SEPARATOR).append(" ").append(it)
+                            }
+                        }
+
+                        WidgetEntry(
+                            label = label,
+                            name = scheduled.course.name.ifBlank { "Untitled" },
+                            subtitle = subtitle
                         )
                     }
                     .toList()
 
                 WidgetState(
-                    title = preferences.timetableName,
+                    title = timetableName,
                     date = today.format(DATE_FORMAT),
                     entries = entries
                 )
@@ -178,8 +192,10 @@ class ScheduleWidget : GlanceAppWidget() {
     }
 
     companion object {
-        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd")
-        private val AM_PM_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("a")
+        private val DATE_FORMAT: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("MM-dd", Locale.getDefault())
+        private val AM_PM_FORMAT: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("a", Locale.getDefault())
         private const val BULLET_SEPARATOR: Char = '\u00B7'
     }
 }
@@ -189,10 +205,10 @@ class ScheduleWidgetReceiver : GlanceAppWidgetReceiver() {
 }
 
 private object MaterialThemeColors {
-    val widgetBackground = 0xFF1C1B1F.toInt()
-    val onWidget = 0xFFF5F5F5.toInt()
-    val onWidgetSecondary = 0xFFB0B0B0.toInt()
-    val primary = 0xFF80CBC4.toInt()
+    val widgetBackground: Color = Color(0xFF1C1B1F)
+    val onWidget: Color = Color(0xFFF5F5F5)
+    val onWidgetSecondary: Color = Color(0xFFB0B0B0)
+    val primary: Color = Color(0xFF80CBC4)
 }
 
 private data class WidgetState(
@@ -227,4 +243,10 @@ private fun HeaderRow(title: String, date: String) {
             style = TextStyle(color = ColorProvider(MaterialThemeColors.onWidgetSecondary))
         )
     }
+}
+
+private fun safeGetString(context: Context, resId: Int): String? = try {
+    context.getString(resId)
+} catch (_: Throwable) {
+    null
 }
